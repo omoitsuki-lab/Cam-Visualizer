@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Piston & Cam with Tuning UI (Counter-Clockwise)</title>
+    <style>
+        :root {
+            color-scheme: dark;
+        }
+
+        body {
+            margin: 0;
+            background: #0f1115;
+            color: #ddd;
+            font-family: system-ui, -apple-system, Segoe UI, Roboto, "Hiragino Sans", "Noto Sans JP", Helvetica, Arial, sans-serif;
+            display: grid;
+            /* 固定幅 340px を 1fr (20%) に、右側を 4fr (80%) に変更 */
+            grid-template-columns: 1fr 4fr;
+            grid-template-rows: auto 1fr;
+            height: 100vh;
+            overflow: hidden;
+            /* 全体のスクロールを防ぐ */
+        }
+
+        /* パネル（操作部）の最小幅を設定して、文字が潰れないようにする */
+        .panel {
+            padding: 16px;
+            border-right: 1px solid #222;
+            overflow-y: auto;
+            min-width: 200px;
+            /* あまりに狭くなりすぎないようガード */
+        }
+
+        header {
+            grid-column: 1 / -1;
+            padding: 12px 16px;
+            border-bottom: 1px solid #222;
+        }
+
+        .group {
+            margin-bottom: 18px;
+            padding-bottom: 12px;
+            border-bottom: 1px dashed #222;
+        }
+
+        .group h3 {
+            margin: 0 0 8px;
+            font-size: 14px;
+            color: #9db3ff;
+        }
+
+        .row {
+            display: grid;
+            grid-template-columns: 1fr 36px;
+            align-items: center;
+            gap: 8px;
+            margin: 8px 0;
+        }
+
+        label {
+            font-size: 13px;
+        }
+
+        input[type="range"] {
+            width: 100%;
+        }
+
+        .value {
+            font-variant-numeric: tabular-nums;
+            text-align: right;
+            color: #aaa;
+            font-size: 12px;
+        }
+
+        .stage {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin-top: 6px;
+            font-size: 12px;
+        }
+
+        .badge {
+            padding: 2px 6px;
+            border: 1px solid #333;
+            border-radius: 4px;
+        }
+
+        .badge.intake {
+            color: #7cbafc;
+            border-color: #2a3f66;
+        }
+
+        .badge.comp {
+            color: #f6e27a;
+            border-color: #5a4f2a;
+        }
+
+        .badge.power {
+            color: #a4f7a4;
+            border-color: #294b29;
+        }
+
+        .badge.exhaust {
+            color: #f19c9c;
+            border-color: #5b2a2a;
+        }
+
+        .canvas {
+            position: relative;
+            /* ジョグダイヤルを配置するために必要 */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: radial-gradient(1200px 600px at 60% 40%, #0c1018 0%, #0b0e14 40%, #0a0d13 100%);
+            overflow: hidden;
+        }
+
+        #valveStatusOverlay {
+            position: absolute;
+            top: 20px;
+            /* 上端からの距離 */
+            left: 50%;
+            /* 画面（または親要素）の横中央に配置 */
+            transform: translateX(-50%);
+            /* 自身の幅の半分左へ戻して、完全にセンター合わせにする */
+            z-index: 100;
+            pointer-events: none;
+        }
+
+        #valveStatus {
+            /* 文字サイズを一段階小さく設定 */
+            font-size: clamp(11px, 1.5vw, 16px);
+            font-weight: 700;
+            /* 上下の余白(4px)と左右の余白(10px)を狭くする */
+            padding: 4px 10px;
+            background: rgba(15, 17, 21, 0.7);
+            /* 透明度を上げて被っても奥が見えるように */
+            border: 1px solid #444;
+            border-radius: 6px;
+            color: #aaa;
+            text-align: center;
+            /* 横幅の制限をさらに小さく、または解除する */
+            min-width: 100px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+            transition: all 0.2s ease;
+        }
+
+        #valveGraph text {
+            font-family: sans-serif;
+            font-weight: 800;
+            paint-order: stroke;
+            stroke: #0f1115;
+            stroke-width: 4px;
+            font-size: 11px;
+        }
+
+        /* SVGそのもののサイズ上限をアップ */
+        svg {
+            width: 98%;
+            height: 98%;
+            max-width: 1400px;
+            /* 1100pxから拡大 */
+            max-height: 90vh;
+            /* 700pxから画面高さ基準へ */
+        }
+
+        .label {
+            font: 15px sans-serif;
+            fill: #bfc7d9;
+        }
+
+        .metal {
+            fill: #8b8f99;
+            stroke: #b7becb;
+            stroke-width: 2;
+        }
+
+        .red {
+            fill: #e45b5b;
+        }
+
+        .blue {
+            fill: #4aa3ff;
+        }
+
+        .green {
+            fill: #6be28f;
+        }
+
+        .overlay {
+            fill: none;
+            stroke: #999;
+            stroke-width: 1.5;
+            stroke-dasharray: 4 4;
+        }
+
+        .spark {
+            fill: #ffd059;
+            stroke: #ffefaf;
+            stroke-width: 1.5;
+            filter: url(#glow);
+        }
+
+        .camCross {
+            stroke: #ffd700;
+            stroke-width: 3;
+        }
+
+        .crankCross {
+            stroke: #00ffff;
+            stroke-width: 3;
+        }
+
+        /* 追加したボタンのスタイル */
+        .manual-control-buttons {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .manual-control-buttons button {
+            flex-grow: 1;
+            padding: 8px 12px;
+            background-color: #33394a;
+            border: 1px solid #4a5168;
+            color: #fff;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 14px;
+            transition: background-color 0.2s;
+        }
+
+        .manual-control-buttons button:hover {
+            background-color: #4a5168;
+        }
+
+        .manual-control-buttons button:disabled {
+            background-color: #1a1f29;
+            color: #555;
+            border-color: #222;
+            cursor: not-allowed;
+        }
+
+        #jogDial {
+            width: 100%;
+            /* 親要素の幅いっぱいに広がる */
+            height: auto;
+            /* アスペクト比を維持 */
+            max-width: 140px;
+            /* 大きくなりすぎない上限 */
+            cursor: grab;
+            touch-action: none;
+        }
+
+        /* 画面幅が 768px 以下の時（スマホ・タブレット等）の特別設定 */
+        @media (max-width: 768px) {
+            body {
+                grid-template-columns: 1fr;
+                /* 1列にする */
+                grid-template-rows: auto 1.5fr 1.5fr;
+                /* 上から ヘッダー、表示部、操作部 */
+            }
+
+            .panel {
+                grid-row: 3;
+                /* 操作部を下に配置 */
+                border-right: none;
+                border-top: 1px solid #222;
+            }
+
+            .canvas {
+                grid-row: 2;
+                /* 表示部を真ん中に配置 */
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <div style="display:flex; align-items:center; gap:12px;">
+            <div class="title-text">Piston & Cam Visualizer</div>
+        </div>
+    </header>
+
+    <div class="panel">
+        <div class="group">
+            <h3>回転数</h3>
+            <div class="row">
+                <label for="rpm">RPM（クランク回転数）</label>
+                <span class="value" id="rpmVal">5 rpm</span>
+            </div>
+            <input id="rpm" type="range" min="0" max="200" step="5" value="5" />
+        </div>
+
+        <div class="group">
+            <h3>手動クランク制御</h3>
+            <div class="row">
+                <label><input id="autoRotateToggle" type="checkbox" checked /> 自動回転を有効にする</label>
+                <span class="value"></span>
+            </div>
+            <div class="row">
+                <label for="crankAngle">クランク角度（ジョグダイヤル）</label>
+                <span class="value" id="crankAngleVal">0 °</span>
+            </div>
+            <input id="crankAngle" type="range" min="0" max="720" step="1" value="0" style="display:none;" />
+
+            <div style="display:flex; justify-content:center; margin: 15px 0;">
+                <svg id="jogDial" width="180" height="180" viewBox="0 0 100 100" style="cursor: grab;">
+                    <circle cx="50" cy="50" r="45" fill="#33394a" stroke="#4a5168" stroke-width="2" />
+                    <g id="dialMarks" transform="translate(50, 50)">
+                        <rect x="-2" y="-45" width="4" height="8" rx="1" fill="#7cbafc" />
+                        <rect x="-3" y="-45" width="6" height="12" rx="2" fill="#ffd700" transform="rotate(90)" />
+                        <rect x="-2" y="-45" width="4" height="8" rx="1" fill="#9db3ff" transform="rotate(180)" />
+                        <rect x="-2" y="-45" width="4" height="8" rx="1" fill="#9db3ff" transform="rotate(270)" />
+                    </g>
+                </svg>
+            </div>
+            <div class="manual-control-buttons">
+                <button id="crankAngleMinus10" disabled>－1°</button>
+                <button id="crankAnglePlus10" disabled>＋1°</button>
+            </div>
+        </div>
+
+        <div class="group">
+            <h3>カム設定</h3>
+            <div class="row">
+                <label for="camGap">Cam間隔</label>
+                <span class="value" id="camGapVal">150 px</span>
+            </div>
+            <input id="camGap" type="range" min="140" max="260" step="5" value="150" />
+        </div>
+
+        <div class="group">
+            <h3>バルブ挟み角</h3>
+            <div class="row">
+                <label for="valveOverlap">挟み角度</label>
+                <span class="value" id="valveOverlapVal">30 °</span>
+            </div>
+            <input id="valveOverlap" type="range" min="0" max="90" step="1" value="30" />
+        </div>
+
+        <div class="group">
+            <h3>カム作用角</h3>
+            <div class="row">
+                <label>吸気カム作用角</label>
+                <span class="value" id="intDurationVal">20 px</span>
+            </div>
+            <input type="range" id="intDuration" min="180" max="320" value="220">
+            <div class="row">
+                <label>排気カム作用角</label>
+                <span class="value" id="exhDurationVal">20 px</span>
+            </div>
+            <input id="exhDuration" type="range" min="180" max="320" value="220" />
+        </div>
+
+
+        <div class="group">
+            <h3>カム全体位相（クランク基準）</h3>
+            <div class="row">
+                <label for="camPhase">全体位相</label>
+                <span class="value" id="camPhaseVal">0 °</span>
+            </div>
+            <input id="camPhase" type="range" min="-40" max="40" step="1" value="0" />
+            <div class="manual-control-buttons">
+                <button id="camPhaseMinus">－1°</button>
+                <button id="camPhasePlus">＋1°</button>
+            </div>
+        </div>
+
+        <div class="group">
+            <h3>個別位相調整</h3>
+            <div class="row">
+                <label>吸気</label>
+                <span class="value" id="intakeCamPhaseVal">0 °</span>
+            </div>
+            <div class="manual-control-buttons">
+                <button id="intakeCamPhaseMinus">－1°</button>
+                <button id="intakeCamPhasePlus">＋1°</button>
+            </div>
+            <div class="row">
+                <label>排気</label>
+                <span class="value" id="exhaustCamPhaseVal">0 °</span>
+            </div>
+            <div class="manual-control-buttons">
+                <button id="exhaustCamPhaseMinus">－1°</button>
+                <button id="exhaustCamPhasePlus">＋1°</button>
+            </div>
+        </div>
+
+        <div class="group">
+            <h3>点火時期</h3>
+            <div class="row">
+                <label for="ignAdv">点火進角</label>
+                <span class="value" id="ignVal">0 °</span>
+            </div>
+            <input id="ignAdv" type="range" min="-30" max="30" step="1" value="0" />
+            <div class="manual-control-buttons">
+                <button id="ignAdvMinus">－1°</button>
+                <button id="ignAdvPlus">＋1°</button>
+            </div>
+        </div>
+
+        <div class="group">
+            <h3>視覚補助</h3>
+            <div class="row">
+                <label><input id="showTDC" type="checkbox" checked /> TDC/BDC クランク カム センターラインを表示</label>
+                <span class="value"></span>
+            </div>
+            <div class="row">
+                <label><input id="showSpark" type="checkbox" checked /> 点火スパーク表示</label>
+                <span class="value"></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="canvas">
+        <div id="valveStatusOverlay">
+            <div id="valveStatus">ALL CLOSED</div>
+        </div>
+
+        <div id="graphContainer"
+            style="position: absolute; bottom: 15px; left: 50%; transform: translateX(-50%); width: 90%; height: 20%; background: rgba(15, 17, 21, 0.8); border: 1px solid #333; border-radius: 8px; pointer-events: none; z-index: 10;">
+            <svg id="valveGraph" width="100%" height="100%" viewBox="0 0 720 100" preserveAspectRatio="none">
+                <line x1="0" y1="0" x2="0" y2="100" stroke="#444" stroke-width="1" />
+                <line x1="180" y1="0" x2="180" y2="100" stroke="#222" stroke-width="1" stroke-dasharray="4" />
+                <line x1="360" y1="0" x2="360" y2="100" stroke="#444" stroke-width="1" />
+                <line x1="540" y1="0" x2="540" y2="100" stroke="#222" stroke-width="1" stroke-dasharray="4" />
+                <line x1="720" y1="0" x2="720" y2="100" stroke="#444" stroke-width="1" />
+
+                <path id="graphExhPath" d="" fill="none" stroke="#e45b5b" stroke-width="2.5" opacity="0.8" />
+                <path id="graphIntPath" d="" fill="none" stroke="#4aa3ff" stroke-width="2.5" opacity="0.8" />
+
+                <line id="currentPosLine" x1="720" y1="0" x2="720" y2="100" stroke="#ffd700" stroke-width="2" />
+
+                <g id="markerExStart">
+                    <line x1="0" y1="0" x2="0" y2="90" stroke="#e45b5b" stroke-dasharray="2 2" />
+                    <text y="15" fill="#e45b5b" font-size="10" text-anchor="middle"></text>
+                </g>
+                <g id="markerExEnd">
+                    <line x1="0" y1="0" x2="0" y2="90" stroke="#e45b5b" stroke-dasharray="2 2" />
+                    <text y="15" fill="#e45b5b" font-size="10" text-anchor="middle"></text>
+                </g>
+                <g id="markerIntStart">
+                    <line x1="0" y1="0" x2="0" y2="90" stroke="#4aa3ff" stroke-dasharray="2 2" />
+                    <text y="15" fill="#4aa3ff" font-size="10" text-anchor="middle"></text>
+                </g>
+                <g id="markerIntEnd">
+                    <line x1="0" y1="0" x2="0" y2="90" stroke="#4aa3ff" stroke-dasharray="2 2" />
+                    <text y="15" fill="#4aa3ff" font-size="10" text-anchor="middle"></text>
+                </g>
+            </svg>
+
+            <div class="labels"
+                style="display: flex; justify-content: space-between; margin-top: 4px; font-size: 11px; color: #888;">
+                <span>720°(TDC)</span>
+                <span>540°(BDC)</span>
+                <span>360°(TDC)</span>
+                <span>180°(BDC)</span>
+                <span>0°(TDC)</span>
+            </div>
+        </div>
+
+        <svg viewBox="0 0 900 520">
+            <defs>
+                <filter id="glow">
+                    <feGaussianBlur stdDeviation="3" result="b" />
+                    <feMerge>
+                        <feMergeNode in="b" />
+                        <feMergeNode in="SourceGraphic" />
+                    </feMerge>
+                </filter>
+            </defs>
+            <rect x="90" y="110" width="150" height="260" rx="12" ry="12" fill="#1a1f29" stroke="#333"
+                stroke-width="3" />
+            <line id="tdcLine" x1="50" y1="115" x2="270" y2="115" class="overlay" />
+            <text x="275" y="115" dy="4" class="label" style="font-size:12px;">TDC</text>
+            <line id="bdcLine" x1="50" y1="195" x2="270" y2="195" class="overlay" />
+            <text x="275" y="195" dy="4" class="label" style="font-size:12px;">BDC</text>
+            <line id="crankCenterLine" x1="50" y1="350" x2="270" y2="350" class="overlay" />
+            <text x="275" y="350" dy="4" class="label" style="font-size:12px;">Fマーク</text>
+            <line id="camCenterLine" x1="350" y1="190" x2="800" y2="190" class="overlay" />
+
+            <rect id="piston" x="100" y="280" width="130" height="80" class="metal" />
+            <line id="rod" x1="165" y1="300" x2="330" y2="300" stroke="#b7becb" stroke-width="10" />
+            <g id="crank" transform="translate(165,350)">
+                <circle r="60" class="metal" />
+                <circle cx="0" cy="-42" r="10" class="blue" />
+            </g>
+            <g id="crankCrosshair">
+                <line x1="-70" y1="0" x2="70" y2="0" class="crankCross" />
+                <line x1="0" y1="-70" x2="0" y2="0" stroke="#ffd700" stroke-width="3" />
+                <line x1="0" y1="0" x2="0" y2="70" class="crankCross" />
+            </g>
+            <g id="sparkGroup" transform="translate(165,110)" opacity="0">
+                <polygon points="0,-10 4,-2 -4,-2" class="spark" />
+                <circle r="20" class="spark" />
+            </g>
+
+            <g id="exhLabelGroup" transform="translate(480, 190)">
+                <text class="label" x="-30" y="-80">Exhaust Cam</text>
+                <circle id="exhValveLightCanvas" cx="-45" cy="-85" r="10" fill="#333" stroke="#5b2a2a"
+                    stroke-width="1" />
+            </g>
+            <g id="exhGroup" transform="translate(480,190)">
+                <g id="camExh">
+                    <path id="camPathExh" d="..." fill="#9aa3b3" stroke="#b7becb" stroke-width="2" />
+                    <line x1="-40" y1="0" x2="40" y2="0" class="camCross" />
+                    <line x1="0" y1="-55" x2="0" y2="40" class="camCross" />
+                </g>
+                <g id="exhValveAssembly">
+                    <rect x="-30" y="35" width="60" height="18" class="metal" />
+                    <rect x="-3" y="53" width="6" height="90" class="red" />
+                    <rect x="-20" y="143" width="40" height="8" class="metal" />
+                </g>
+            </g>
+
+            <g id="intLabelGroup" transform="translate(620, 190)">
+                <text class="label" x="-30" y="-80">Intake Cam</text>
+                <circle id="intValveLightCanvas" cx="-45" cy="-85" r="10" fill="#333" stroke="#2a3f66"
+                    stroke-width="1" />
+            </g>
+            <g id="intGroup" transform="translate(620,190)">
+                <g id="camInt">
+                    <path id="camPathInt" d="..." fill="#9aa3b3" stroke="#b7becb" stroke-width="2" />
+                    <line x1="-40" y1="0" x2="40" y2="0" class="camCross" />
+                    <line x1="0" y1="-55" x2="0" y2="40" class="camCross" />
+                </g>
+                <g id="intValveAssembly">
+                    <rect x="-30" y="35" width="60" height="18" class="metal" />
+                    <rect x="-3" y="53" width="6" height="90" class="green" />
+                    <rect x="-20" y="143" width="40" height="8" class="metal" />
+                </g>
+            </g>
+        </svg>
+    </div>
+
+    <script>
+        (function () {
+            const el = id => document.getElementById(id);
+            const camExh = el('camExh'), camInt = el('camInt'), camPathExh = el('camPathExh'), camPathInt = el('camPathInt');
+            const exhValveAssembly = el('exhValveAssembly'), intValveAssembly = el('intValveAssembly');
+            const piston = el('piston'), rod = el('rod'), crank = el('crank'), crankCrosshair = el('crankCrosshair');
+            const jogDial = el('jogDial'), dialMarks = el('dialMarks'), rpmEl = el('rpm'), rpmVal = el('rpmVal'), ignAdvEl = el('ignAdv');
+            const camPhaseEl = el('camPhase'), valveOverlapEl = el('valveOverlap'), camGapEl = el('camGap'), autoRotateToggleEl = el('autoRotateToggle');
+            const intDurEl = el('intDuration'), exhDurEl = el('exhDuration');
+            const valveStatusLabel = el('valveStatus');
+            const currentPosLine = el('currentPosLine');
+
+            // --- 基本設定 ---
+            const baseR = 32;
+            const camRatio = 0.5;
+            const CRANK_TDC_OFFSET = 90;
+            const crankRadius = 42, rodLength = 150;
+
+            let crankAngle = 0, last = performance.now(), isDragging = false, lastMouseAngle = 0;
+            let intakeCamPhase = 0, exhaustCamPhase = 0;
+
+            const toRad = deg => deg * Math.PI / 180;
+
+            // 1. 最大リフト量
+            function calculateDynamicLift(durationDeg) {
+                return 12 + Math.max(0, (durationDeg - 180) * 0.12);
+            }
+
+            // 2. 接線カムの topR 算出
+            function durationToTopR(lift, durationDeg) {
+                const halfAngRad = toRad(durationDeg / 4);
+                const cosA = Math.cos(halfAngRad);
+                let calculatedTopR = (baseR - (baseR + lift) * cosA) / (1 - cosA);
+                return Math.max(baseR * 0.1, calculatedTopR);
+            }
+
+            // 3. カム形状のパス生成
+            function generateSmoothCamPath(lift, durationDeg) {
+                const topR = durationToTopR(lift, durationDeg);
+                const d = (baseR + lift) - topR;
+                if (d <= 0 || isNaN(d)) return `M 0,-${baseR} A ${baseR} ${baseR} 0 1 1 0.01,-${baseR} Z`;
+                const sinT = (baseR - topR) / d;
+                const clampedSinT = Math.max(-1, Math.min(1, sinT));
+                const cosT = Math.sqrt(1 - clampedSinT * clampedSinT);
+                const x1 = baseR * cosT, y1 = -baseR * clampedSinT;
+                const x2 = topR * cosT, y2 = -d - (topR * clampedSinT);
+                return `M ${x1.toFixed(2)},${y1.toFixed(2)} 
+                    A ${baseR} ${baseR} 0 1 1 ${(-x1).toFixed(2)},${y1.toFixed(2)} 
+                    L ${(-x2).toFixed(2)},${y2.toFixed(2)} 
+                    A ${topR} ${topR} 0 0 1 ${x2.toFixed(2)},${y2.toFixed(2)} Z`;
+            }
+
+            // 4. バルブリフト計算
+            function getFlatFollowerLift(durationDeg, camRotationDeg) {
+                const lift = calculateDynamicLift(durationDeg);
+                const topR = durationToTopR(lift, durationDeg);
+                const d = (baseR + lift) - topR;
+                let ang = ((camRotationDeg % 360) + 540) % 360 - 180;
+                const thetaRad = toRad(ang);
+                const limitAngRad = toRad(durationDeg / 4);
+                if (Math.abs(thetaRad) < limitAngRad) {
+                    return Math.max(0, d * Math.cos(thetaRad) + topR - baseR);
+                }
+                return 0;
+            }
+
+            // 5. 作用角ラベル更新（左右0.5°ずつの補正適用）
+            function updateDurLabel(open, close, lift, color, idSuffix) {
+                const id = `durLabel_${idSuffix}`;
+                let label = el(id);
+                if (!label) {
+                    label = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                    label.setAttribute("id", id);
+                    label.setAttribute("fill", color);
+                    label.setAttribute("font-size", "11");
+                    label.setAttribute("font-weight", "bold");
+                    label.setAttribute("text-anchor", "middle");
+                    el('valveGraph').appendChild(label);
+                }
+                if (open === -1) { label.textContent = ""; return; }
+
+                // 左右0.5度ずつ広げて計算
+                const actualDur = ((close + 0.5) - (open - 0.5)).toFixed(1).replace(/\.0$/, "");
+                label.setAttribute("x", open + (close - open) / 2);
+                label.setAttribute("y", Math.max(10, 100 - (lift * 1.5) - 8));
+                label.textContent = `${actualDur}°`;
+            }
+
+            // 6. グラフ更新
+            function updateValveGraph() {
+                let dInt = "", dExh = "";
+                const overlap = parseFloat(valveOverlapEl.value);
+                const phaseAdj = parseFloat(camPhaseEl.value);
+                const iDeg = parseFloat(intDurEl.value), eDeg = parseFloat(exhDurEl.value);
+                let intOpen = -1, intClose = -1, exhOpen = -1, exhClose = -1;
+
+                for (let i = 0; i <= 720; i += 0.5) {
+                    // phaseAdjにcamRatio(0.5)を掛けることでクランク1°に対しカム0.5°の動きにする
+                    const baseCam = (i * camRatio + (phaseAdj * camRatio) + 180);
+
+                    // 排気：全体位相 + 個別位相 + 配置オフセット
+                    const relExh = baseCam + (exhaustCamPhase * camRatio) + 135 - overlap / 2;
+                    // 吸気：全体位相 + 個別位相 + 配置オフセット
+                    const relInt = baseCam + (intakeCamPhase * camRatio) - 135 + overlap / 2;
+
+                    // リフト量計算用のオフセット補正
+                    const lEx = getFlatFollowerLift(eDeg, relExh - (180 - overlap / 2));
+                    const lIn = getFlatFollowerLift(iDeg, relInt - (180 + overlap / 2));
+
+                    dExh += (i === 0 ? "M" : "L") + i + "," + (100 - lEx * 1.5);
+                    dInt += (i === 0 ? "M" : "L") + i + "," + (100 - lIn * 1.5);
+                    if (lIn > 0.000001) { if (intOpen === -1) intOpen = i; intClose = i; }
+                    if (lEx > 0.000001) { if (exhOpen === -1) exhOpen = i; exhClose = i; }
+                }
+                el('graphExhPath').setAttribute('d', dExh);
+                el('graphIntPath').setAttribute('d', dInt);
+
+                // ... (マーカー更新処理はそのまま)
+                const setMarker = (id, x, isStart) => {
+                    const m = el(id); if (!m) return;
+                    if (x === -1) { m.setAttribute('opacity', '0'); return; }
+                    m.setAttribute('opacity', '1');
+                    const correctedX = isStart ? (x - 0.5) : (x + 0.5);
+                    m.querySelector('line').setAttribute('x1', correctedX);
+                    m.querySelector('line').setAttribute('x2', correctedX);
+                    m.querySelector('text').setAttribute('x', correctedX);
+                    const val = (720 - correctedX).toFixed(1).replace(/\.0$/, "");
+                    m.querySelector('text').textContent = `${val}°`;
+                };
+                setMarker('markerExStart', exhOpen, true);
+                setMarker('markerExEnd', exhClose, false);
+                setMarker('markerIntStart', intOpen, true);
+                setMarker('markerIntEnd', intClose, false);
+                updateDurLabel(exhOpen, exhClose, calculateDynamicLift(eDeg), "#e45b5b", "exh");
+                updateDurLabel(intOpen, intClose, calculateDynamicLift(iDeg), "#4aa3ff", "int");
+            }
+
+            function updateCamShapes() {
+                const iDeg = parseFloat(intDurEl.value), eDeg = parseFloat(exhDurEl.value);
+                camPathInt.setAttribute('d', generateSmoothCamPath(calculateDynamicLift(iDeg), iDeg));
+                camPathExh.setAttribute('d', generateSmoothCamPath(calculateDynamicLift(eDeg), eDeg));
+                updateLabels();
+                updateValveGraph();
+            }
+
+            function updateLabels() {
+                rpmVal.textContent = `${rpmEl.value} rpm`;
+                el('ignVal').textContent = `${ignAdvEl.value} °`;
+                el('camPhaseVal').textContent = `${camPhaseEl.value} °`;
+                el('valveOverlapVal').textContent = `${valveOverlapEl.value} °`;
+                el('camGapVal').textContent = `${camGapEl.value} px`;
+                el('intDurationVal').textContent = `${intDurEl.value} °`;
+                el('exhDurationVal').textContent = `${exhDurEl.value} °`;
+                el('intakeCamPhaseVal').textContent = `${intakeCamPhase} °`;
+                el('exhaustCamPhaseVal').textContent = `${exhaustCamPhase} °`;
+
+                el('crankAngleVal').textContent = `${Math.round((720 - crankAngle) % 720)} °`;
+            }
+
+            // スライダー調整関数
+            function adjustSlider(id, delta) {
+                const input = el(id);
+                const newVal = parseFloat(input.value) + delta;
+                if (newVal >= parseFloat(input.min) && newVal <= parseFloat(input.max)) {
+                    input.value = newVal;
+                    updateCamShapes();
+                }
+            }
+
+            function step(now) {
+                const dt = (now - last) / 1000;
+                last = now;
+                if (autoRotateToggleEl.checked) {
+                    crankAngle = (crankAngle - (parseFloat(rpmEl.value) * 720 / 60) * dt % 720 + 720) % 720;
+                }
+                const displayAngle = (720 - crankAngle) % 720;
+                dialMarks.setAttribute('transform', `translate(50, 50) rotate(${crankAngle})`);
+
+                // スパーク処理
+                if (el('showSpark').checked) {
+                    const adv = parseFloat(ignAdvEl.value);
+                    const sparkTriggerAngle = (0 + adv + 720) % 720;
+                    let diff = Math.abs(displayAngle - sparkTriggerAngle);
+                    if (diff > 360) diff = 720 - diff;
+                    sparkGroup.setAttribute('opacity', diff < 3 ? '1' : '0');
+                } else {
+                    sparkGroup.setAttribute('opacity', '0');
+                }
+
+                const graphX = 720 - displayAngle;
+                currentPosLine.setAttribute('x1', graphX);
+                currentPosLine.setAttribute('x2', graphX);
+
+                const theta = toRad(crankAngle % 360);
+                const yP = 350 - (crankRadius * Math.cos(theta) + Math.sqrt(rodLength ** 2 - (crankRadius * Math.sin(theta)) ** 2));
+                piston.setAttribute('y', yP - 40);
+                rod.setAttribute('x1', 165); rod.setAttribute('y1', yP + 40);
+                rod.setAttribute('x2', 165 + crankRadius * Math.sin(theta)); rod.setAttribute('y2', 350 - crankRadius * Math.cos(theta));
+                crank.setAttribute('transform', `translate(165,350) rotate(${crankAngle})`);
+
+                const ignPos = (crankAngle % 360) + CRANK_TDC_OFFSET + parseFloat(ignAdvEl.value);
+                crankCrosshair.setAttribute('transform', `translate(165,350) rotate(${ignPos})`);
+
+                const gap = parseFloat(camGapEl.value), overlap = parseFloat(valveOverlapEl.value), phaseAdj = parseFloat(camPhaseEl.value);
+                const baseCam = (crankAngle * camRatio + phaseAdj + 180);
+                el('exhGroup').setAttribute("transform", `translate(${550 - gap / 2}, 190)`);
+                el('intGroup').setAttribute("transform", `translate(${550 + gap / 2}, 190)`);
+
+                // step関数内の該当箇所
+                const aEx = (baseCam + (exhaustCamPhase * camRatio) + 135 - overlap / 2);
+                const aIn = (baseCam + (intakeCamPhase * camRatio) - 135 + overlap / 2);
+                camExh.setAttribute('transform', `rotate(${aEx % 360})`);
+                camInt.setAttribute('transform', `rotate(${aIn % 360})`);
+
+                const liftEx = getFlatFollowerLift(parseFloat(exhDurEl.value), aEx - (180 - overlap / 2));
+                const liftIn = getFlatFollowerLift(parseFloat(intDurEl.value), aIn - (180 + overlap / 2));
+
+                const bVis = baseR - 35;
+                exhValveAssembly.setAttribute('transform', `rotate(${-overlap / 2}) translate(0, ${liftEx + bVis})`);
+                intValveAssembly.setAttribute('transform', `rotate(${overlap / 2}) translate(0, ${liftIn + bVis})`);
+
+                const isInOpen = liftIn > 0.001, isExOpen = liftEx > 0.001;
+                if (el('intValveLightCanvas')) el('intValveLightCanvas').setAttribute('fill', isInOpen ? '#4aa3ff' : '#333');
+                if (el('exhValveLightCanvas')) el('exhValveLightCanvas').setAttribute('fill', isExOpen ? '#e45b5b' : '#333');
+
+                if (valveStatusLabel) {
+                    if (isInOpen && isExOpen) { valveStatusLabel.textContent = 'OVERLAP'; valveStatusLabel.style.color = '#f6e27a'; }
+                    else if (isInOpen) { valveStatusLabel.textContent = 'INTAKE OPEN'; valveStatusLabel.style.color = '#4aa3ff'; }
+                    else if (isExOpen) { valveStatusLabel.textContent = 'EXHAUST OPEN'; valveStatusLabel.style.color = '#e45b5b'; }
+                    else { valveStatusLabel.textContent = 'ALL CLOSED'; valveStatusLabel.style.color = '#aaa'; }
+                }
+                updateLabels();
+                requestAnimationFrame(step);
+            }
+
+            const inputIds = ['rpm', 'ignAdv', 'camPhase', 'valveOverlap', 'camGap', 'intDuration', 'exhDuration'];
+            inputIds.forEach(id => el(id).addEventListener('input', updateCamShapes));
+
+            // --- ボタンクリックイベントの設定 ---
+            // カム全体位相ボタン
+            //el('camPhaseMinus').onclick = () => adjustSlider('camPhase', -1);
+            //el('camPhasePlus').onclick = () => adjustSlider('camPhase', 1);
+            // 個別位相調整ボタン（吸気）
+            //el('intakeCamPhaseMinus').onclick = () => adjustSlider('intakeCamPhase', -1);
+            //el('intakeCamPhasePlus').onclick = () => adjustSlider('intakeCamPhase', 1);
+            // 個別位相調整ボタン（排気）
+            //el('exhaustCamPhaseMinus').onclick = () => adjustSlider('exhDuration', -1);
+            //el('exhaustCamPhasePlus').onclick = () => adjustSlider('exhDuration', 1);
+
+            // クランク角制御ボタン
+            //el('crankAnglePlus10').onclick = () => { crankAngle = (crankAngle - 1 + 720) % 720; };
+            //el('crankAngleMinus10').onclick = () => { crankAngle = (crankAngle + 1) % 720; };
+
+            // 点火時期ボタン（進角）
+            //el('ignAdvMinus').onclick = () => adjustSlider('ignAdv', -1);
+            //el('ignAdvPlus').onclick = () => adjustSlider('ignAdv', 1);
+
+            jogDial.addEventListener('mousedown', e => {
+                if (!autoRotateToggleEl.checked) {
+                    isDragging = true;
+                    const rect = jogDial.getBoundingClientRect();
+                    lastMouseAngle = Math.atan2(e.clientY - (rect.top + rect.height / 2), e.clientX - (rect.left + rect.width / 2)) * 180 / Math.PI;
+                }
+            });
+            window.addEventListener('mousemove', e => {
+                if (isDragging) {
+                    const rect = jogDial.getBoundingClientRect();
+                    const curA = Math.atan2(e.clientY - (rect.top + rect.height / 2), e.clientX - (rect.left + rect.width / 2)) * 180 / Math.PI;
+                    let delta = curA - lastMouseAngle;
+                    if (delta > 180) delta -= 360;
+                    if (delta < -180) delta += 360;
+                    crankAngle = (crankAngle + delta + 720) % 720;
+                    lastMouseAngle = curA;
+                }
+            });
+            window.addEventListener('mouseup', () => isDragging = false);
+
+            el('crankAnglePlus10').onclick = () => { crankAngle = (crankAngle - 1 + 720) % 720; };
+            el('crankAngleMinus10').onclick = () => { crankAngle = (crankAngle + 1) % 720; };
+            autoRotateToggleEl.onchange = () => { el('crankAnglePlus10').disabled = el('crankAngleMinus10').disabled = autoRotateToggleEl.checked; };
+
+            el('camPhaseMinus').onclick = () => { camPhaseEl.value--; updateCamShapes(); };
+            el('camPhasePlus').onclick = () => { camPhaseEl.value++; updateCamShapes(); };
+            el('intakeCamPhaseMinus').onclick = () => { intakeCamPhase -= 1; updateLabels(); updateValveGraph(); };
+            el('intakeCamPhasePlus').onclick = () => { intakeCamPhase += 1; updateLabels(); updateValveGraph(); };
+            el('exhaustCamPhaseMinus').onclick = () => { exhaustCamPhase -= 1; updateLabels(); updateValveGraph(); };
+            el('exhaustCamPhasePlus').onclick = () => { exhaustCamPhase += 1; updateLabels(); updateValveGraph(); };
+            el('ignAdvMinus').onclick = () => { ignAdvEl.value--; updateLabels(); };
+            el('ignAdvPlus').onclick = () => { ignAdvEl.value++; updateLabels(); };
+
+            updateCamShapes();
+            requestAnimationFrame(step);
+        })();
+    </script>
+
+</body>
+
+</html>
