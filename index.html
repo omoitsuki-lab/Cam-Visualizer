@@ -538,214 +538,214 @@
     </div>
 
     <script>
-    (function () {
-        const el = id => document.getElementById(id);
-        const camExh = el('camExh'), camInt = el('camInt'), camPathExh = el('camPathExh'), camPathInt = el('camPathInt');
-        const exhValveAssembly = el('exhValveAssembly'), intValveAssembly = el('intValveAssembly');
-        const piston = el('piston'), rod = el('rod'), crank = el('crank'), crankCrosshair = el('crankCrosshair');
-        const jogDial = el('jogDial'), dialMarks = el('dialMarks'), rpmEl = el('rpm'), rpmVal = el('rpmVal'), ignAdvEl = el('ignAdv');
-        const camPhaseEl = el('camPhase'), valveOverlapEl = el('valveOverlap'), camGapEl = el('camGap'), autoRotateToggleEl = el('autoRotateToggle');
-        const intDurEl = el('intDuration'), exhDurEl = el('exhDuration');
-        const valveStatusLabel = el('valveStatus');
-        const currentPosLine = el('currentPosLine');
+        (function () {
+            const el = id => document.getElementById(id);
+            const camExh = el('camExh'), camInt = el('camInt'), camPathExh = el('camPathExh'), camPathInt = el('camPathInt');
+            const exhValveAssembly = el('exhValveAssembly'), intValveAssembly = el('intValveAssembly');
+            const piston = el('piston'), rod = el('rod'), crank = el('crank'), crankCrosshair = el('crankCrosshair');
+            const jogDial = el('jogDial'), dialMarks = el('dialMarks'), rpmEl = el('rpm'), rpmVal = el('rpmVal'), ignAdvEl = el('ignAdv');
+            const camPhaseEl = el('camPhase'), valveOverlapEl = el('valveOverlap'), camGapEl = el('camGap'), autoRotateToggleEl = el('autoRotateToggle');
+            const intDurEl = el('intDuration'), exhDurEl = el('exhDuration');
+            const valveStatusLabel = el('valveStatus');
+            const currentPosLine = el('currentPosLine');
 
-        const baseR = 32;
-        const camRatio = 0.5;
-        const CRANK_TDC_OFFSET = 90;
-        const crankRadius = 42, rodLength = 150;
+            const baseR = 32;
+            const camRatio = 0.5;
+            const CRANK_TDC_OFFSET = 90;
+            const crankRadius = 42, rodLength = 150;
 
-        let crankAngle = 0, last = performance.now(), isDragging = false, lastMouseAngle = 0;
-        let intakeCamPhase = 0, exhaustCamPhase = 0;
+            let crankAngle = 0, last = performance.now(), isDragging = false, lastMouseAngle = 0;
+            let intakeCamPhase = 0, exhaustCamPhase = 0;
 
-        const toRad = deg => deg * Math.PI / 180;
+            const toRad = deg => deg * Math.PI / 180;
 
-        function calculateDynamicLift(durationDeg) {
-            return 12 + Math.max(0, (durationDeg - 180) * 0.12);
-        }
-
-        function durationToTopR(lift, durationDeg) {
-            const halfAngRad = toRad(durationDeg / 4);
-            const cosA = Math.cos(halfAngRad);
-            return Math.max(baseR * 0.1, (baseR - (baseR + lift) * cosA) / (1 - cosA));
-        }
-
-        function generateSmoothCamPath(lift, durationDeg) {
-            const topR = durationToTopR(lift, durationDeg);
-            const d = (baseR + lift) - topR;
-            if (d <= 0 || isNaN(d)) return `M 0,-${baseR} A ${baseR} ${baseR} 0 1 1 0.01,-${baseR} Z`;
-            const sinT = Math.max(-1, Math.min(1, (baseR - topR) / d));
-            const cosT = Math.sqrt(1 - sinT * sinT);
-            const x1 = baseR * cosT, y1 = -baseR * sinT;
-            const x2 = topR * cosT, y2 = -d - (topR * sinT);
-            return `M ${x1.toFixed(2)},${y1.toFixed(2)} A ${baseR} ${baseR} 0 1 1 ${(-x1).toFixed(2)},${y1.toFixed(2)} L ${(-x2).toFixed(2)},${y2.toFixed(2)} A ${topR} ${topR} 0 0 1 ${x2.toFixed(2)},${y2.toFixed(2)} Z`;
-        }
-
-        function getFlatFollowerLift(durationDeg, camRotationDeg) {
-            const lift = calculateDynamicLift(durationDeg);
-            const topR = durationToTopR(lift, durationDeg);
-            const d = (baseR + lift) - topR;
-            let ang = ((camRotationDeg % 360) + 540) % 360 - 180;
-            const thetaRad = toRad(ang);
-            const limitAngRad = toRad(durationDeg / 4);
-            return Math.abs(thetaRad) < limitAngRad ? Math.max(0, d * Math.cos(thetaRad) + topR - baseR) : 0;
-        }
-
-        function updateDurLabel(open, close, lift, color, idSuffix) {
-            const id = `durLabel_${idSuffix}`;
-            let label = el(id);
-            if (!label) {
-                label = document.createElementNS("http://www.w3.org/2000/svg", "text");
-                label.setAttribute("id", id);
-                label.setAttribute("fill", color); label.setAttribute("font-size", "11");
-                label.setAttribute("font-weight", "bold"); label.setAttribute("text-anchor", "middle");
-                el('valveGraph').appendChild(label);
+            function calculateDynamicLift(durationDeg) {
+                return 12 + Math.max(0, (durationDeg - 180) * 0.12);
             }
-            if (open === -1) { label.textContent = ""; return; }
-            const actualDur = ((close + 0.5) - (open - 0.5)).toFixed(1).replace(/\.0$/, "");
-            label.setAttribute("x", open + (close - open) / 2);
-            label.setAttribute("y", Math.max(10, 100 - (lift * 1.5) - 8));
-            label.textContent = `${actualDur}°`;
-        }
 
-        function updateValveGraph() {
-            let dInt = "", dExh = "";
-            const overlap = parseFloat(valveOverlapEl.value), phaseAdj = parseFloat(camPhaseEl.value);
-            const iDeg = parseFloat(intDurEl.value), eDeg = parseFloat(exhDurEl.value);
-            let intOpen = -1, intClose = -1, exhOpen = -1, exhClose = -1;
-
-            for (let i = 0; i <= 720; i += 0.5) {
-                const baseCam = (i * camRatio + (phaseAdj * camRatio) + 180);
-                const relExh = baseCam + (exhaustCamPhase * camRatio) + 135 - overlap / 2;
-                const relInt = baseCam + (intakeCamPhase * camRatio) - 135 + overlap / 2;
-                const lEx = getFlatFollowerLift(eDeg, relExh - (180 - overlap / 2));
-                const lIn = getFlatFollowerLift(iDeg, relInt - (180 + overlap / 2));
-                dExh += (i === 0 ? "M" : "L") + i + "," + (100 - lEx * 1.5);
-                dInt += (i === 0 ? "M" : "L") + i + "," + (100 - lIn * 1.5);
-                if (lIn > 0.000001) { if (intOpen === -1) intOpen = i; intClose = i; }
-                if (lEx > 0.000001) { if (exhOpen === -1) exhOpen = i; exhClose = i; }
+            function durationToTopR(lift, durationDeg) {
+                const halfAngRad = toRad(durationDeg / 4);
+                const cosA = Math.cos(halfAngRad);
+                return Math.max(baseR * 0.1, (baseR - (baseR + lift) * cosA) / (1 - cosA));
             }
-            el('graphExhPath').setAttribute('d', dExh);
-            el('graphIntPath').setAttribute('d', dInt);
-            const setMarker = (id, x, isStart) => {
-                const m = el(id); if (!m) return;
-                if (x === -1) { m.setAttribute('opacity', '0'); return; }
-                m.setAttribute('opacity', '1');
-                const cx = isStart ? (x - 0.5) : (x + 0.5);
-                m.querySelector('line').setAttribute('x1', cx); m.querySelector('line').setAttribute('x2', cx);
-                m.querySelector('text').setAttribute('x', cx);
-                m.querySelector('text').textContent = `${(720 - cx).toFixed(1).replace(/\.0$/, "")}°`;
+
+            function generateSmoothCamPath(lift, durationDeg) {
+                const topR = durationToTopR(lift, durationDeg);
+                const d = (baseR + lift) - topR;
+                if (d <= 0 || isNaN(d)) return `M 0,-${baseR} A ${baseR} ${baseR} 0 1 1 0.01,-${baseR} Z`;
+                const sinT = Math.max(-1, Math.min(1, (baseR - topR) / d));
+                const cosT = Math.sqrt(1 - sinT * sinT);
+                const x1 = baseR * cosT, y1 = -baseR * sinT;
+                const x2 = topR * cosT, y2 = -d - (topR * sinT);
+                return `M ${x1.toFixed(2)},${y1.toFixed(2)} A ${baseR} ${baseR} 0 1 1 ${(-x1).toFixed(2)},${y1.toFixed(2)} L ${(-x2).toFixed(2)},${y2.toFixed(2)} A ${topR} ${topR} 0 0 1 ${x2.toFixed(2)},${y2.toFixed(2)} Z`;
+            }
+
+            function getFlatFollowerLift(durationDeg, camRotationDeg) {
+                const lift = calculateDynamicLift(durationDeg);
+                const topR = durationToTopR(lift, durationDeg);
+                const d = (baseR + lift) - topR;
+                let ang = ((camRotationDeg % 360) + 540) % 360 - 180;
+                const thetaRad = toRad(ang);
+                const limitAngRad = toRad(durationDeg / 4);
+                return Math.abs(thetaRad) < limitAngRad ? Math.max(0, d * Math.cos(thetaRad) + topR - baseR) : 0;
+            }
+
+            function updateDurLabel(open, close, lift, color, idSuffix) {
+                const id = `durLabel_${idSuffix}`;
+                let label = el(id);
+                if (!label) {
+                    label = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                    label.setAttribute("id", id);
+                    label.setAttribute("fill", color); label.setAttribute("font-size", "11");
+                    label.setAttribute("font-weight", "bold"); label.setAttribute("text-anchor", "middle");
+                    el('valveGraph').appendChild(label);
+                }
+                if (open === -1) { label.textContent = ""; return; }
+                const actualDur = ((close + 0.5) - (open - 0.5)).toFixed(1).replace(/\.0$/, "");
+                label.setAttribute("x", open + (close - open) / 2);
+                label.setAttribute("y", Math.max(10, 100 - (lift * 1.5) - 8));
+                label.textContent = `${actualDur}°`;
+            }
+
+            function updateValveGraph() {
+                let dInt = "", dExh = "";
+                const overlap = parseFloat(valveOverlapEl.value), phaseAdj = parseFloat(camPhaseEl.value);
+                const iDeg = parseFloat(intDurEl.value), eDeg = parseFloat(exhDurEl.value);
+                let intOpen = -1, intClose = -1, exhOpen = -1, exhClose = -1;
+
+                for (let i = 0; i <= 720; i += 0.5) {
+                    const baseCam = (i * camRatio + (phaseAdj * camRatio) + 180);
+                    const relExh = baseCam + (exhaustCamPhase * camRatio) + 135 - overlap / 2;
+                    const relInt = baseCam + (intakeCamPhase * camRatio) - 135 + overlap / 2;
+                    const lEx = getFlatFollowerLift(eDeg, relExh - (180 - overlap / 2));
+                    const lIn = getFlatFollowerLift(iDeg, relInt - (180 + overlap / 2));
+                    dExh += (i === 0 ? "M" : "L") + i + "," + (100 - lEx * 1.5);
+                    dInt += (i === 0 ? "M" : "L") + i + "," + (100 - lIn * 1.5);
+                    if (lIn > 0.000001) { if (intOpen === -1) intOpen = i; intClose = i; }
+                    if (lEx > 0.000001) { if (exhOpen === -1) exhOpen = i; exhClose = i; }
+                }
+                el('graphExhPath').setAttribute('d', dExh);
+                el('graphIntPath').setAttribute('d', dInt);
+                const setMarker = (id, x, isStart) => {
+                    const m = el(id); if (!m) return;
+                    if (x === -1) { m.setAttribute('opacity', '0'); return; }
+                    m.setAttribute('opacity', '1');
+                    const cx = isStart ? (x - 0.5) : (x + 0.5);
+                    m.querySelector('line').setAttribute('x1', cx); m.querySelector('line').setAttribute('x2', cx);
+                    m.querySelector('text').setAttribute('x', cx);
+                    m.querySelector('text').textContent = `${(720 - cx).toFixed(1).replace(/\.0$/, "")}°`;
+                };
+                setMarker('markerExStart', exhOpen, true); setMarker('markerExEnd', exhClose, false);
+                setMarker('markerIntStart', intOpen, true); setMarker('markerIntEnd', intClose, false);
+                updateDurLabel(exhOpen, exhClose, calculateDynamicLift(eDeg), "#e45b5b", "exh");
+                updateDurLabel(intOpen, intClose, calculateDynamicLift(iDeg), "#4aa3ff", "int");
+            }
+
+            function updateCamShapes() {
+                const iDeg = parseFloat(intDurEl.value), eDeg = parseFloat(exhDurEl.value);
+                camPathInt.setAttribute('d', generateSmoothCamPath(calculateDynamicLift(iDeg), iDeg));
+                camPathExh.setAttribute('d', generateSmoothCamPath(calculateDynamicLift(eDeg), eDeg));
+                updateLabels(); updateValveGraph();
+            }
+
+            function updateLabels() {
+                rpmVal.textContent = `${rpmEl.value} rpm`; el('ignVal').textContent = `${ignAdvEl.value} °`;
+                el('camPhaseVal').textContent = `${camPhaseEl.value} °`; el('valveOverlapVal').textContent = `${valveOverlapEl.value} °`;
+                el('camGapVal').textContent = `${camGapEl.value} px`; el('intDurationVal').textContent = `${intDurEl.value} °`;
+                el('exhDurationVal').textContent = `${exhDurEl.value} °`; el('intakeCamPhaseVal').textContent = `${intakeCamPhase} °`;
+                el('exhaustCamPhaseVal').textContent = `${exhaustCamPhase} °`;
+                el('crankAngleVal').textContent = `${Math.round((720 - crankAngle) % 720)} °`;
+            }
+
+            function step(now) {
+                const dt = (now - last) / 1000; last = now;
+                if (autoRotateToggleEl.checked) crankAngle = (crankAngle - (parseFloat(rpmEl.value) * 720 / 60) * dt % 720 + 720) % 720;
+                const displayAngle = (720 - crankAngle) % 720;
+                dialMarks.setAttribute('transform', `translate(50, 50) rotate(${crankAngle})`);
+
+                if (el('showSpark').checked) {
+                    const sparkTriggerAngle = (parseFloat(ignAdvEl.value) + 720) % 720;
+                    let diff = Math.abs(displayAngle - sparkTriggerAngle);
+                    if (diff > 360) diff = 720 - diff;
+                    el('sparkGroup').setAttribute('opacity', diff < 3 ? '1' : '0');
+                } else el('sparkGroup').setAttribute('opacity', '0');
+
+                const graphX = 720 - displayAngle;
+                currentPosLine.setAttribute('x1', graphX); currentPosLine.setAttribute('x2', graphX);
+
+                const theta = toRad(crankAngle % 360);
+                const yP = 350 - (crankRadius * Math.cos(theta) + Math.sqrt(rodLength ** 2 - (crankRadius * Math.sin(theta)) ** 2));
+                piston.setAttribute('y', yP - 40);
+                rod.setAttribute('x1', 165); rod.setAttribute('y1', yP + 40);
+                rod.setAttribute('x2', 165 + crankRadius * Math.sin(theta)); rod.setAttribute('y2', 350 - crankRadius * Math.cos(theta));
+                crank.setAttribute('transform', `translate(165,350) rotate(${crankAngle})`);
+                crankCrosshair.setAttribute('transform', `translate(165,350) rotate(${(crankAngle % 360) + CRANK_TDC_OFFSET + parseFloat(ignAdvEl.value)})`);
+
+                const gap = parseFloat(camGapEl.value), overlap = parseFloat(valveOverlapEl.value), phaseAdj = parseFloat(camPhaseEl.value);
+                const baseCam = (crankAngle * camRatio + (phaseAdj * camRatio) + 180);
+                el('exhGroup').setAttribute("transform", `translate(${550 - gap / 2}, 190)`);
+                el('intGroup').setAttribute("transform", `translate(${550 + gap / 2}, 190)`);
+
+                const aEx = (baseCam + (exhaustCamPhase * camRatio) + 135 - overlap / 2);
+                const aIn = (baseCam + (intakeCamPhase * camRatio) - 135 + overlap / 2);
+                camExh.setAttribute('transform', `rotate(${aEx % 360})`); camInt.setAttribute('transform', `rotate(${aIn % 360})`);
+
+                const liftEx = getFlatFollowerLift(parseFloat(exhDurEl.value), aEx - (180 - overlap / 2));
+                const liftIn = getFlatFollowerLift(parseFloat(intDurEl.value), aIn - (180 + overlap / 2));
+                const bVis = baseR - 35;
+                exhValveAssembly.setAttribute('transform', `rotate(${-overlap / 2}) translate(0, ${liftEx + bVis})`);
+                intValveAssembly.setAttribute('transform', `rotate(${overlap / 2}) translate(0, ${liftIn + bVis})`);
+
+                if (el('intValveLightCanvas')) el('intValveLightCanvas').setAttribute('fill', liftIn > 0.001 ? '#4aa3ff' : '#333');
+                if (el('exhValveLightCanvas')) el('exhValveLightCanvas').setAttribute('fill', liftEx > 0.001 ? '#e45b5b' : '#333');
+
+                if (valveStatusLabel) {
+                    if (liftIn > 0.001 && liftEx > 0.001) { valveStatusLabel.textContent = 'OVERLAP'; valveStatusLabel.style.color = '#f6e27a'; }
+                    else if (liftIn > 0.001) { valveStatusLabel.textContent = 'INTAKE OPEN'; valveStatusLabel.style.color = '#4aa3ff'; }
+                    else if (liftEx > 0.001) { valveStatusLabel.textContent = 'EXHAUST OPEN'; valveStatusLabel.style.color = '#e45b5b'; }
+                    else { valveStatusLabel.textContent = 'ALL CLOSED'; valveStatusLabel.style.color = '#aaa'; }
+                }
+                updateLabels(); requestAnimationFrame(step);
+            }
+
+            // --- タッチ＆マウス共通処理 ---
+            function getAngle(e) {
+                const rect = jogDial.getBoundingClientRect();
+                const cx = e.touches ? e.touches[0].clientX : e.clientX;
+                const cy = e.touches ? e.touches[0].clientY : e.clientY;
+                return Math.atan2(cy - (rect.top + rect.height / 2), cx - (rect.left + rect.width / 2)) * 180 / Math.PI;
+            }
+            const startH = e => { if (!autoRotateToggleEl.checked) { isDragging = true; lastMouseAngle = getAngle(e); if (e.cancelable) e.preventDefault(); } };
+            const moveH = e => {
+                if (isDragging) {
+                    const curA = getAngle(e); let delta = curA - lastMouseAngle;
+                    if (delta > 180) delta -= 360; if (delta < -180) delta += 360;
+                    crankAngle = (crankAngle + delta + 720) % 720; lastMouseAngle = curA;
+                    if (e.cancelable) e.preventDefault();
+                }
             };
-            setMarker('markerExStart', exhOpen, true); setMarker('markerExEnd', exhClose, false);
-            setMarker('markerIntStart', intOpen, true); setMarker('markerIntEnd', intClose, false);
-            updateDurLabel(exhOpen, exhClose, calculateDynamicLift(eDeg), "#e45b5b", "exh");
-            updateDurLabel(intOpen, intClose, calculateDynamicLift(iDeg), "#4aa3ff", "int");
-        }
+            jogDial.addEventListener('mousedown', startH); window.addEventListener('mousemove', moveH); window.addEventListener('mouseup', () => isDragging = false);
+            jogDial.addEventListener('touchstart', startH, { passive: false }); window.addEventListener('touchmove', moveH, { passive: false }); window.addEventListener('touchend', () => isDragging = false);
 
-        function updateCamShapes() {
-            const iDeg = parseFloat(intDurEl.value), eDeg = parseFloat(exhDurEl.value);
-            camPathInt.setAttribute('d', generateSmoothCamPath(calculateDynamicLift(iDeg), iDeg));
-            camPathExh.setAttribute('d', generateSmoothCamPath(calculateDynamicLift(eDeg), eDeg));
-            updateLabels(); updateValveGraph();
-        }
+            el('crankAnglePlus10').onclick = () => { crankAngle = (crankAngle - 1 + 720) % 720; };
+            el('crankAngleMinus10').onclick = () => { crankAngle = (crankAngle + 1) % 720; };
+            autoRotateToggleEl.onchange = () => { el('crankAnglePlus10').disabled = el('crankAngleMinus10').disabled = autoRotateToggleEl.checked; };
 
-        function updateLabels() {
-            rpmVal.textContent = `${rpmEl.value} rpm`; el('ignVal').textContent = `${ignAdvEl.value} °`;
-            el('camPhaseVal').textContent = `${camPhaseEl.value} °`; el('valveOverlapVal').textContent = `${valveOverlapEl.value} °`;
-            el('camGapVal').textContent = `${camGapEl.value} px`; el('intDurationVal').textContent = `${intDurEl.value} °`;
-            el('exhDurationVal').textContent = `${exhDurEl.value} °`; el('intakeCamPhaseVal').textContent = `${intakeCamPhase} °`;
-            el('exhaustCamPhaseVal').textContent = `${exhaustCamPhase} °`;
-            el('crankAngleVal').textContent = `${Math.round((720 - crankAngle) % 720)} °`;
-        }
+            const inputs = ['rpm', 'ignAdv', 'camPhase', 'valveOverlap', 'camGap', 'intDuration', 'exhDuration'];
+            inputs.forEach(id => el(id).addEventListener('input', updateCamShapes));
 
-        function step(now) {
-            const dt = (now - last) / 1000; last = now;
-            if (autoRotateToggleEl.checked) crankAngle = (crankAngle - (parseFloat(rpmEl.value) * 720 / 60) * dt % 720 + 720) % 720;
-            const displayAngle = (720 - crankAngle) % 720;
-            dialMarks.setAttribute('transform', `translate(50, 50) rotate(${crankAngle})`);
+            el('camPhaseMinus').onclick = () => { camPhaseEl.value = parseFloat(camPhaseEl.value) - 1; updateCamShapes(); };
+            el('camPhasePlus').onclick = () => { camPhaseEl.value = parseFloat(camPhaseEl.value) + 1; updateCamShapes(); };
+            el('intakeCamPhaseMinus').onclick = () => { intakeCamPhase -= 1; updateLabels(); updateValveGraph(); };
+            el('intakeCamPhasePlus').onclick = () => { intakeCamPhase += 1; updateLabels(); updateValveGraph(); };
+            el('exhaustCamPhaseMinus').onclick = () => { exhaustCamPhase -= 1; updateLabels(); updateValveGraph(); };
+            el('exhaustCamPhasePlus').onclick = () => { exhaustCamPhase += 1; updateLabels(); updateValveGraph(); };
+            el('ignAdvMinus').onclick = () => { ignAdvEl.value--; updateLabels(); };
+            el('ignAdvPlus').onclick = () => { ignAdvEl.value++; updateLabels(); };
 
-            if (el('showSpark').checked) {
-                const sparkTriggerAngle = (parseFloat(ignAdvEl.value) + 720) % 720;
-                let diff = Math.abs(displayAngle - sparkTriggerAngle);
-                if (diff > 360) diff = 720 - diff;
-                el('sparkGroup').setAttribute('opacity', diff < 3 ? '1' : '0');
-            } else el('sparkGroup').setAttribute('opacity', '0');
-
-            const graphX = 720 - displayAngle;
-            currentPosLine.setAttribute('x1', graphX); currentPosLine.setAttribute('x2', graphX);
-
-            const theta = toRad(crankAngle % 360);
-            const yP = 350 - (crankRadius * Math.cos(theta) + Math.sqrt(rodLength ** 2 - (crankRadius * Math.sin(theta)) ** 2));
-            piston.setAttribute('y', yP - 40);
-            rod.setAttribute('x1', 165); rod.setAttribute('y1', yP + 40);
-            rod.setAttribute('x2', 165 + crankRadius * Math.sin(theta)); rod.setAttribute('y2', 350 - crankRadius * Math.cos(theta));
-            crank.setAttribute('transform', `translate(165,350) rotate(${crankAngle})`);
-            crankCrosshair.setAttribute('transform', `translate(165,350) rotate(${(crankAngle % 360) + CRANK_TDC_OFFSET + parseFloat(ignAdvEl.value)})`);
-
-            const gap = parseFloat(camGapEl.value), overlap = parseFloat(valveOverlapEl.value), phaseAdj = parseFloat(camPhaseEl.value);
-            const baseCam = (crankAngle * camRatio + (phaseAdj * camRatio) + 180);
-            el('exhGroup').setAttribute("transform", `translate(${550 - gap / 2}, 190)`);
-            el('intGroup').setAttribute("transform", `translate(${550 + gap / 2}, 190)`);
-
-            const aEx = (baseCam + (exhaustCamPhase * camRatio) + 135 - overlap / 2);
-            const aIn = (baseCam + (intakeCamPhase * camRatio) - 135 + overlap / 2);
-            camExh.setAttribute('transform', `rotate(${aEx % 360})`); camInt.setAttribute('transform', `rotate(${aIn % 360})`);
-
-            const liftEx = getFlatFollowerLift(parseFloat(exhDurEl.value), aEx - (180 - overlap / 2));
-            const liftIn = getFlatFollowerLift(parseFloat(intDurEl.value), aIn - (180 + overlap / 2));
-            const bVis = baseR - 35;
-            exhValveAssembly.setAttribute('transform', `rotate(${-overlap / 2}) translate(0, ${liftEx + bVis})`);
-            intValveAssembly.setAttribute('transform', `rotate(${overlap / 2}) translate(0, ${liftIn + bVis})`);
-
-            if (el('intValveLightCanvas')) el('intValveLightCanvas').setAttribute('fill', liftIn > 0.001 ? '#4aa3ff' : '#333');
-            if (el('exhValveLightCanvas')) el('exhValveLightCanvas').setAttribute('fill', liftEx > 0.001 ? '#e45b5b' : '#333');
-
-            if (valveStatusLabel) {
-                if (liftIn > 0.001 && liftEx > 0.001) { valveStatusLabel.textContent = 'OVERLAP'; valveStatusLabel.style.color = '#f6e27a'; }
-                else if (liftIn > 0.001) { valveStatusLabel.textContent = 'INTAKE OPEN'; valveStatusLabel.style.color = '#4aa3ff'; }
-                else if (liftEx > 0.001) { valveStatusLabel.textContent = 'EXHAUST OPEN'; valveStatusLabel.style.color = '#e45b5b'; }
-                else { valveStatusLabel.textContent = 'ALL CLOSED'; valveStatusLabel.style.color = '#aaa'; }
-            }
-            updateLabels(); requestAnimationFrame(step);
-        }
-
-        // --- タッチ＆マウス共通処理 ---
-        function getAngle(e) {
-            const rect = jogDial.getBoundingClientRect();
-            const cx = e.touches ? e.touches[0].clientX : e.clientX;
-            const cy = e.touches ? e.touches[0].clientY : e.clientY;
-            return Math.atan2(cy - (rect.top + rect.height / 2), cx - (rect.left + rect.width / 2)) * 180 / Math.PI;
-        }
-        const startH = e => { if (!autoRotateToggleEl.checked) { isDragging = true; lastMouseAngle = getAngle(e); if (e.cancelable) e.preventDefault(); } };
-        const moveH = e => {
-            if (isDragging) {
-                const curA = getAngle(e); let delta = curA - lastMouseAngle;
-                if (delta > 180) delta -= 360; if (delta < -180) delta += 360;
-                crankAngle = (crankAngle + delta + 720) % 720; lastMouseAngle = curA;
-                if (e.cancelable) e.preventDefault();
-            }
-        };
-        jogDial.addEventListener('mousedown', startH); window.addEventListener('mousemove', moveH); window.addEventListener('mouseup', () => isDragging = false);
-        jogDial.addEventListener('touchstart', startH, { passive: false }); window.addEventListener('touchmove', moveH, { passive: false }); window.addEventListener('touchend', () => isDragging = false);
-
-        el('crankAnglePlus10').onclick = () => { crankAngle = (crankAngle - 1 + 720) % 720; };
-        el('crankAngleMinus10').onclick = () => { crankAngle = (crankAngle + 1) % 720; };
-        autoRotateToggleEl.onchange = () => { el('crankAnglePlus10').disabled = el('crankAngleMinus10').disabled = autoRotateToggleEl.checked; };
-
-        const inputs = ['rpm', 'ignAdv', 'camPhase', 'valveOverlap', 'camGap', 'intDuration', 'exhDuration'];
-        inputs.forEach(id => el(id).addEventListener('input', updateCamShapes));
-
-        el('camPhaseMinus').onclick = () => { camPhaseEl.value = parseFloat(camPhaseEl.value) - 1; updateCamShapes(); };
-        el('camPhasePlus').onclick = () => { camPhaseEl.value = parseFloat(camPhaseEl.value) + 1; updateCamShapes(); };
-        el('intakeCamPhaseMinus').onclick = () => { intakeCamPhase -= 1; updateLabels(); updateValveGraph(); };
-        el('intakeCamPhasePlus').onclick = () => { intakeCamPhase += 1; updateLabels(); updateValveGraph(); };
-        el('exhaustCamPhaseMinus').onclick = () => { exhaustCamPhase -= 1; updateLabels(); updateValveGraph(); };
-        el('exhaustCamPhasePlus').onclick = () => { exhaustCamPhase += 1; updateLabels(); updateValveGraph(); };
-        el('ignAdvMinus').onclick = () => { ignAdvEl.value--; updateLabels(); };
-        el('ignAdvPlus').onclick = () => { ignAdvEl.value++; updateLabels(); };
-
-        updateCamShapes(); requestAnimationFrame(step);
-    })();
-</script>
+            updateCamShapes(); requestAnimationFrame(step);
+        })();
+    </script>
 
 </body>
 
