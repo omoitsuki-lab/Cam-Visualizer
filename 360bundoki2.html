@@ -2,223 +2,751 @@
 <html lang="ja">
 
 <head>
-    <meta charset="UTF-8">
-    <title>360°分度器 (モード切替機能付)</title>
+    <meta charset="UTF-8" />
+    <title>Piston & Cam with Tuning UI (Counter-Clockwise)</title>
     <style>
+        :root {
+            color-scheme: dark;
+        }
+
         body {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: flex-start;
-            min-height: 100vh;
             margin: 0;
-            background-color: #ffffff;
-            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background: #0f1115;
+            color: #ddd;
+            font-family: system-ui, -apple-system, Segoe UI, Roboto, "Hiragino Sans", "Noto Sans JP", Helvetica, Arial, sans-serif;
+            display: grid;
+            /* 固定幅 340px を 1fr (20%) に、右側を 4fr (80%) に変更 */
+            grid-template-columns: 1fr 4fr;
+            grid-template-rows: auto 1fr;
+            height: 100vh;
+            overflow: hidden;
+            /* 全体のスクロールを防ぐ */
         }
 
-        .controls {
-            background: #f0f0f0;
-            padding: 15px 20px;
-            width: 100%;
-            display: flex;
-            flex-wrap: wrap;
-            align-items: center;
-            justify-content: center;
-            gap: 15px;
-            border-bottom: 1px solid #ccc;
+        /* パネル（操作部）の最小幅を設定して、文字が潰れないようにする */
+        .panel {
+            padding: 16px;
+            border-right: 1px solid #222;
+            overflow-y: auto;
+            min-width: 200px;
+            /* あまりに狭くなりすぎないようガード */
         }
 
-        .mode-selector {
-            display: flex;
-            gap: 10px;
-            background: #ddd;
-            padding: 5px;
-            border-radius: 8px;
+        header {
+            grid-column: 1 / -1;
+            padding: 12px 16px;
+            border-bottom: 1px solid #222;
         }
 
-        .mode-selector label {
-            cursor: pointer;
-            padding: 5px 10px;
-            border-radius: 5px;
+        .group {
+            margin-bottom: 18px;
+            padding-bottom: 12px;
+            border-bottom: 1px dashed #222;
+        }
+
+        .group h3 {
+            margin: 0 0 8px;
             font-size: 14px;
+            color: #9db3ff;
         }
 
-        .mode-selector input { display: none; }
-        .mode-selector input:checked + span {
-            background: #fff;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        .row {
+            display: grid;
+            grid-template-columns: 1fr 36px;
+            align-items: center;
+            gap: 8px;
+            margin: 8px 0;
+        }
+
+        label {
+            font-size: 13px;
+        }
+
+        input[type="range"] {
+            width: 100%;
+        }
+
+        .value {
+            font-variant-numeric: tabular-nums;
+            text-align: right;
+            color: #aaa;
+            font-size: 12px;
+        }
+
+        .stage {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin-top: 6px;
+            font-size: 12px;
+        }
+
+        .badge {
+            padding: 2px 6px;
+            border: 1px solid #333;
             border-radius: 4px;
-            padding: 5px 10px;
-            font-weight: bold;
         }
 
-        @media print {
-            .controls { display: none; }
-            body { background: white; }
+        .badge.intake {
+            color: #7cbafc;
+            border-color: #2a3f66;
         }
 
-        .protractor-container {
-            background: transparent;
-            padding: 10px;
-            margin-top: 20px;
+        .badge.comp {
+            color: #f6e27a;
+            border-color: #5a4f2a;
         }
 
-        svg { transform: rotate(-90deg); display: block; }
-        .tick { stroke: #000; stroke-width: 1; }
-        .tick.major { stroke-width: 2.5; }
-        .label-outer { font-size: 14px; fill: #000; font-weight: bold; }
-        .label-inner { font-size: 11px; fill: #000; font-weight: bold; }
-        .marker-text { font-size: 32px; fill: #000; font-weight: 900; }
+        .badge.power {
+            color: #a4f7a4;
+            border-color: #294b29;
+        }
+
+        .badge.exhaust {
+            color: #f19c9c;
+            border-color: #5b2a2a;
+        }
+
+        .canvas {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            /* 上寄せに変更 */
+            padding-top: 20px;
+            /* 上端の余白を設定 */
+            background: radial-gradient(1200px 600px at 60% 40%, #0c1018 0%, #0b0e14 40%, #0a0d13 100%);
+            overflow-y: auto;
+            /* 画面からはみ出た場合にスクロール可能にする */
+        }
+
+        #valveStatusOverlay {
+            position: absolute;
+            top: 20px;
+            /* 上端からの距離 */
+            left: 50%;
+            /* 画面（または親要素）の横中央に配置 */
+            transform: translateX(-50%);
+            /* 自身の幅の半分左へ戻して、完全にセンター合わせにする */
+            z-index: 100;
+            pointer-events: none;
+        }
+
+        #valveStatus {
+            /* 文字サイズを一段階小さく設定 */
+            font-size: clamp(11px, 1.5vw, 16px);
+            font-weight: 700;
+            /* 上下の余白(4px)と左右の余白(10px)を狭くする */
+            padding: 4px 10px;
+            background: rgba(15, 17, 21, 0.7);
+            /* 透明度を上げて被っても奥が見えるように */
+            border: 1px solid #444;
+            border-radius: 6px;
+            color: #aaa;
+            text-align: center;
+            /* 横幅の制限をさらに小さく、または解除する */
+            min-width: 100px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+            transition: all 0.2s ease;
+        }
+
+        #valveGraph text {
+            font-family: sans-serif;
+            font-weight: 800;
+            paint-order: stroke;
+            stroke: #0f1115;
+            stroke-width: 4px;
+            font-size: 11px;
+        }
+
+        /* SVGそのもののサイズ上限をアップ */
+        svg {
+            width: 98%;
+            height: 98%;
+            max-width: 1400px;
+            /* 1100pxから拡大 */
+            max-height: 90vh;
+            /* 700pxから画面高さ基準へ */
+        }
+
+        .label {
+            font: 15px sans-serif;
+            fill: #bfc7d9;
+        }
+
+        .metal {
+            fill: #8b8f99;
+            stroke: #b7becb;
+            stroke-width: 2;
+        }
+
+        .red {
+            fill: #e45b5b;
+        }
+
+        .blue {
+            fill: #4aa3ff;
+        }
+
+        .green {
+            fill: #6be28f;
+        }
+
+        .overlay {
+            fill: none;
+            stroke: #999;
+            stroke-width: 1.5;
+            stroke-dasharray: 4 4;
+        }
+
+        .spark {
+            fill: #ffd059;
+            stroke: #ffefaf;
+            stroke-width: 1.5;
+            filter: url(#glow);
+        }
+
+        .camCross {
+            stroke: #ffd700;
+            stroke-width: 3;
+        }
+
+        .crankCross {
+            stroke: #00ffff;
+            stroke-width: 3;
+        }
+
+        /* 追加したボタンのスタイル */
+        .manual-control-buttons {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .manual-control-buttons button {
+            flex-grow: 1;
+            padding: 8px 12px;
+            background-color: #33394a;
+            border: 1px solid #4a5168;
+            color: #fff;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 14px;
+            transition: background-color 0.2s;
+        }
+
+        .manual-control-buttons button:hover {
+            background-color: #4a5168;
+        }
+
+        .manual-control-buttons button:disabled {
+            background-color: #1a1f29;
+            color: #555;
+            border-color: #222;
+            cursor: not-allowed;
+        }
+
+        #jogDial {
+            width: 100%;
+            /* 親要素の幅いっぱいに広がる */
+            height: auto;
+            /* アスペクト比を維持 */
+            max-width: 140px;
+            /* 大きくなりすぎない上限 */
+            cursor: grab;
+            touch-action: none;
+        }
+
+        /* 画面幅が 768px 以下の時（スマホ・タブレット等）の特別設定 */
+        @media (max-width: 768px) {
+            body {
+                grid-template-columns: 1fr;
+                /* 1列にする */
+                grid-template-rows: auto 1.5fr 1.5fr;
+                /* 上から ヘッダー、表示部、操作部 */
+            }
+
+            .panel {
+                grid-row: 3;
+                /* 操作部を下に配置 */
+                border-right: none;
+                border-top: 1px solid #222;
+            }
+
+            .canvas {
+                grid-row: 2;
+                /* 表示部を真ん中に配置 */
+            }
+        }
     </style>
 </head>
 
 <body>
-
-    <div class="controls">
-        <div class="mode-selector">
-            <label><input type="radio" name="mode" value="180" checked><span>180°往復</span></label>
-            <label><input type="radio" name="mode" value="360"><span>360°正逆</span></label>
-            <label><input type="radio" name="mode" value="all"><span>4段全部</span></label>
+    <header>
+        <div style="display:flex; align-items:center; gap:12px;">
+            <div class="title-text">Piston & Cam Visualizer</div>
         </div>
-        
-        <label for="sizeRange">サイズ: </label>
-        <input type="range" id="sizeRange" min="200" max="1000" value="600" step="10">
-        <span id="sizeValue">600px</span>
-        
-        <button onclick="window.print()">印刷する</button>
+    </header>
+
+    <div class="panel">
+        <div class="group">
+            <h3>回転数</h3>
+            <div class="row">
+                <label for="rpm">RPM（クランク回転数）</label>
+                <span class="value" id="rpmVal">5 rpm</span>
+            </div>
+            <input id="rpm" type="range" min="0" max="200" step="5" value="5" />
+        </div>
+
+        <div class="group">
+            <h3>手動クランク制御</h3>
+            <div class="row">
+                <label><input id="autoRotateToggle" type="checkbox" checked /> 自動回転を有効にする</label>
+                <span class="value"></span>
+            </div>
+            <div class="row">
+                <label for="crankAngle">クランク角度（ジョグダイヤル）</label>
+                <span class="value" id="crankAngleVal">0 °</span>
+            </div>
+            <input id="crankAngle" type="range" min="0" max="720" step="1" value="0" style="display:none;" />
+
+            <div style="display:flex; justify-content:center; margin: 15px 0;">
+                <svg id="jogDial" width="180" height="180" viewBox="0 0 100 100" style="cursor: grab;">
+                    <circle cx="50" cy="50" r="45" fill="#33394a" stroke="#4a5168" stroke-width="2" />
+                    <g id="dialMarks" transform="translate(50, 50)">
+                        <rect x="-2" y="-45" width="4" height="8" rx="1" fill="#7cbafc" />
+                        <rect x="-3" y="-45" width="6" height="12" rx="2" fill="#ffd700" transform="rotate(90)" />
+                        <rect x="-2" y="-45" width="4" height="8" rx="1" fill="#9db3ff" transform="rotate(180)" />
+                        <rect x="-2" y="-45" width="4" height="8" rx="1" fill="#9db3ff" transform="rotate(270)" />
+                    </g>
+                </svg>
+            </div>
+            <div class="manual-control-buttons">
+                <button id="crankAngleMinus10" disabled>－1°</button>
+                <button id="crankAnglePlus10" disabled>＋1°</button>
+            </div>
+        </div>
+
+        <div class="group">
+            <h3>カム設定</h3>
+            <div class="row">
+                <label for="camGap">Cam間隔</label>
+                <span class="value" id="camGapVal">150 px</span>
+            </div>
+            <input id="camGap" type="range" min="140" max="260" step="5" value="150" />
+        </div>
+
+        <div class="group">
+            <h3>バルブ挟み角</h3>
+            <div class="row">
+                <label for="valveOverlap">挟み角度</label>
+                <span class="value" id="valveOverlapVal">30 °</span>
+            </div>
+            <input id="valveOverlap" type="range" min="0" max="90" step="1" value="30" />
+        </div>
+
+        <div class="group">
+            <h3>カム作用角</h3>
+            <div class="row">
+                <label>吸気カム作用角</label>
+                <span class="value" id="intDurationVal">20 px</span>
+            </div>
+            <input type="range" id="intDuration" min="180" max="320" value="220">
+            <div class="row">
+                <label>排気カム作用角</label>
+                <span class="value" id="exhDurationVal">20 px</span>
+            </div>
+            <input id="exhDuration" type="range" min="180" max="320" value="220" />
+        </div>
+
+
+        <div class="group">
+            <h3>カム全体位相（クランク基準）</h3>
+            <div class="row">
+                <label for="camPhase">全体位相</label>
+                <span class="value" id="camPhaseVal">0 °</span>
+            </div>
+            <input id="camPhase" type="range" min="-40" max="40" step="1" value="0" />
+            <div class="manual-control-buttons">
+                <button id="camPhaseMinus">－1°</button>
+                <button id="camPhasePlus">＋1°</button>
+            </div>
+        </div>
+
+        <div class="group">
+            <h3>個別位相調整</h3>
+            <div class="row">
+                <label>吸気</label>
+                <span class="value" id="intakeCamPhaseVal">0 °</span>
+            </div>
+            <div class="manual-control-buttons">
+                <button id="intakeCamPhaseMinus">－1°</button>
+                <button id="intakeCamPhasePlus">＋1°</button>
+            </div>
+            <div class="row">
+                <label>排気</label>
+                <span class="value" id="exhaustCamPhaseVal">0 °</span>
+            </div>
+            <div class="manual-control-buttons">
+                <button id="exhaustCamPhaseMinus">－1°</button>
+                <button id="exhaustCamPhasePlus">＋1°</button>
+            </div>
+        </div>
+
+        <div class="group">
+            <h3>点火時期</h3>
+            <div class="row">
+                <label for="ignAdv">点火進角</label>
+                <span class="value" id="ignVal">0 °</span>
+            </div>
+            <input id="ignAdv" type="range" min="-30" max="30" step="1" value="0" />
+            <div class="manual-control-buttons">
+                <button id="ignAdvMinus">－1°</button>
+                <button id="ignAdvPlus">＋1°</button>
+            </div>
+        </div>
+
+        <div class="group">
+            <h3>視覚補助</h3>
+            <div class="row">
+                <label><input id="showTDC" type="checkbox" checked /> TDC/BDC クランク カム センターラインを表示</label>
+                <span class="value"></span>
+            </div>
+            <div class="row">
+                <label><input id="showSpark" type="checkbox" checked /> 点火スパーク表示</label>
+                <span class="value"></span>
+            </div>
+        </div>
     </div>
 
-    <div class="protractor-container">
-        <svg id="protractor" viewBox="0 0 500 500" width="600" height="600">
-            <image <image
-                href="data:image/png;base64,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"
-                x="215" y="160" width="70" height="70" transform="rotate(90, 250, 250)" />
-            <circle cx="250" cy="250" r="240" fill="none" stroke="#000" stroke-width="2" />
+    <div class="canvas">
+        <div id="valveStatusOverlay">
+            <div id="valveStatus">ALL CLOSED</div>
+        </div>
 
-            <g id="ticks"></g>
-            
-            <g id="group-180"></g>
-            <g id="group-360" style="display:none;"></g>
+        <div id="graphContainer"
+            style="position: absolute; top: 420px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 800px; height: 120px; background: rgba(15, 17, 21, 0.8); border: 1px solid #333; border-radius: 8px; pointer-events: none; z-index: 10;">
+            <svg id="valveGraph" width="100%" height="100%" viewBox="0 0 720 100" preserveAspectRatio="none">
+                <line x1="0" y1="0" x2="0" y2="100" stroke="#444" stroke-width="1" />
+                <line x1="180" y1="0" x2="180" y2="100" stroke="#222" stroke-width="1" stroke-dasharray="4" />
+                <line x1="360" y1="0" x2="360" y2="100" stroke="#444" stroke-width="1" />
+                <line x1="540" y1="0" x2="540" y2="100" stroke="#222" stroke-width="1" stroke-dasharray="4" />
+                <line x1="720" y1="0" x2="720" y2="100" stroke="#444" stroke-width="1" />
 
-            <g transform="translate(350, 250)"><text text-anchor="middle" dominant-baseline="middle" class="marker-text" transform="rotate(90)">TDC</text></g>
-            <g transform="translate(150, 250)"><text text-anchor="middle" dominant-baseline="middle" class="marker-text" transform="rotate(-90)">BDC</text></g>
+                <path id="graphExhPath" d="" fill="none" stroke="#e45b5b" stroke-width="2.5" opacity="0.8" />
+                <path id="graphIntPath" d="" fill="none" stroke="#4aa3ff" stroke-width="2.5" opacity="0.8" />
 
-            <g stroke="#000" stroke-width="1">
-                <line x1="250" y1="230" x2="250" y2="270" /><line x1="230" y1="250" x2="270" y2="250" />
-                <line x1="235.8" y1="235.8" x2="264.2" y2="264.2" /><line x1="235.8" y1="264.2" x2="264.2" y2="235.8" />
+                <line id="currentPosLine" x1="720" y1="0" x2="720" y2="100" stroke="#ffd700" stroke-width="2" />
+
+                <g id="markerExStart">
+                    <line x1="0" y1="0" x2="0" y2="90" stroke="#e45b5b" stroke-dasharray="2 2" /><text y="15"
+                        fill="#e45b5b" font-size="10" text-anchor="middle"></text>
+                </g>
+                <g id="markerExEnd">
+                    <line x1="0" y1="0" x2="0" y2="90" stroke="#e45b5b" stroke-dasharray="2 2" /><text y="15"
+                        fill="#e45b5b" font-size="10" text-anchor="middle"></text>
+                </g>
+                <g id="markerIntStart">
+                    <line x1="0" y1="0" x2="0" y2="90" stroke="#4aa3ff" stroke-dasharray="2 2" /><text y="15"
+                        fill="#4aa3ff" font-size="10" text-anchor="middle"></text>
+                </g>
+                <g id="markerIntEnd">
+                    <line x1="0" y1="0" x2="0" y2="90" stroke="#4aa3ff" stroke-dasharray="2 2" /><text y="15"
+                        fill="#4aa3ff" font-size="10" text-anchor="middle"></text>
+                </g>
+            </svg>
+
+            <div class="labels"
+                style="display: flex; justify-content: space-between; margin-top: 4px; font-size: 11px; color: #888;">
+                <span>720°(TDC)</span><span>540°(BDC)</span><span>360°(TDC)</span><span>180°(BDC)</span><span>0°(TDC)</span>
+            </div>
+        </div>
+
+        <svg viewBox="0 0 900 520">
+            <defs>
+                <filter id="glow">
+                    <feGaussianBlur stdDeviation="3" result="b" />
+                    <feMerge>
+                        <feMergeNode in="b" />
+                        <feMergeNode in="SourceGraphic" />
+                    </feMerge>
+                </filter>
+            </defs>
+            <rect x="90" y="110" width="150" height="260" rx="12" ry="12" fill="#1a1f29" stroke="#333"
+                stroke-width="3" />
+            <line id="tdcLine" x1="50" y1="115" x2="270" y2="115" class="overlay" />
+            <text x="275" y="115" dy="4" class="label" style="font-size:12px;">TDC</text>
+            <line id="bdcLine" x1="50" y1="195" x2="270" y2="195" class="overlay" />
+            <text x="275" y="195" dy="4" class="label" style="font-size:12px;">BDC</text>
+            <line id="crankCenterLine" x1="50" y1="350" x2="270" y2="350" class="overlay" />
+            <text x="275" y="350" dy="4" class="label" style="font-size:12px;">Fマーク</text>
+            <line id="camCenterLine" x1="350" y1="190" x2="800" y2="190" class="overlay" />
+
+            <rect id="piston" x="100" y="280" width="130" height="80" class="metal" />
+            <line id="rod" x1="165" y1="300" x2="330" y2="300" stroke="#b7becb" stroke-width="10" />
+            <g id="crank" transform="translate(165,350)">
+                <circle r="60" class="metal" />
+                <circle cx="0" cy="-42" r="10" class="blue" />
+            </g>
+            <g id="crankCrosshair">
+                <line x1="-70" y1="0" x2="70" y2="0" class="crankCross" />
+                <line x1="0" y1="-70" x2="0" y2="0" stroke="#ffd700" stroke-width="3" />
+                <line x1="0" y1="0" x2="0" y2="70" class="crankCross" />
+            </g>
+            <g id="sparkGroup" transform="translate(165,110)" opacity="0">
+                <polygon points="0,-10 4,-2 -4,-2" class="spark" />
+                <circle r="20" class="spark" />
             </g>
 
-            <circle cx="250" cy="250" r="6" fill="#000" />
+            <g id="exhLabelGroup" transform="translate(480, 190)">
+                <text class="label" x="-30" y="-80">Exhaust Cam</text>
+                <circle id="exhValveLightCanvas" cx="-45" cy="-85" r="10" fill="#333" stroke="#5b2a2a"
+                    stroke-width="1" />
+            </g>
+            <g id="exhGroup" transform="translate(480,190)">
+                <g id="camExh">
+                    <path id="camPathExh" d="..." fill="#9aa3b3" stroke="#b7becb" stroke-width="2" />
+                    <line x1="-40" y1="0" x2="40" y2="0" class="camCross" />
+                    <line x1="0" y1="-55" x2="0" y2="40" class="camCross" />
+                </g>
+                <g id="exhValveAssembly">
+                    <rect x="-30" y="35" width="60" height="18" class="metal" />
+                    <rect x="-3" y="53" width="6" height="90" class="red" />
+                    <rect x="-20" y="143" width="40" height="8" class="metal" />
+                </g>
+            </g>
+
+            <g id="intLabelGroup" transform="translate(620, 190)">
+                <text class="label" x="-30" y="-80">Intake Cam</text>
+                <circle id="intValveLightCanvas" cx="-45" cy="-85" r="10" fill="#333" stroke="#2a3f66"
+                    stroke-width="1" />
+            </g>
+            <g id="intGroup" transform="translate(620,190)">
+                <g id="camInt">
+                    <path id="camPathInt" d="..." fill="#9aa3b3" stroke="#b7becb" stroke-width="2" />
+                    <line x1="-40" y1="0" x2="40" y2="0" class="camCross" />
+                    <line x1="0" y1="-55" x2="0" y2="40" class="camCross" />
+                </g>
+                <g id="intValveAssembly">
+                    <rect x="-30" y="35" width="60" height="18" class="metal" />
+                    <rect x="-3" y="53" width="6" height="90" class="green" />
+                    <rect x="-20" y="143" width="40" height="8" class="metal" />
+                </g>
+            </g>
         </svg>
     </div>
 
     <script>
-        const protractorSvg = document.getElementById('protractor');
-        const sizeRange = document.getElementById('sizeRange');
-        const sizeValue = document.getElementById('sizeValue');
-        const modeRadios = document.getElementsByName('mode');
+    (function () {
+        const el = id => document.getElementById(id);
+        const camExh = el('camExh'), camInt = el('camInt'), camPathExh = el('camPathExh'), camPathInt = el('camPathInt');
+        const exhValveAssembly = el('exhValveAssembly'), intValveAssembly = el('intValveAssembly');
+        const piston = el('piston'), rod = el('rod'), crank = el('crank'), crankCrosshair = el('crankCrosshair');
+        const jogDial = el('jogDial'), dialMarks = el('dialMarks'), rpmEl = el('rpm'), rpmVal = el('rpmVal'), ignAdvEl = el('ignAdv');
+        const camPhaseEl = el('camPhase'), valveOverlapEl = el('valveOverlap'), camGapEl = el('camGap'), autoRotateToggleEl = el('autoRotateToggle');
+        const intDurEl = el('intDuration'), exhDurEl = el('exhDuration');
+        const valveStatusLabel = el('valveStatus');
+        const currentPosLine = el('currentPosLine');
 
-        const group180 = document.getElementById('group-180');
-        const group360 = document.getElementById('group-360');
+        const baseR = 32;
+        const camRatio = 0.5;
+        const CRANK_TDC_OFFSET = 90;
+        const crankRadius = 42, rodLength = 150;
 
-        // サイズ変更
-        sizeRange.addEventListener('input', (e) => {
-            const val = e.target.value;
-            sizeValue.textContent = val + "px";
-            protractorSvg.setAttribute('width', val);
-            protractorSvg.setAttribute('height', val);
-        });
+        let crankAngle = 0, last = performance.now(), isDragging = false, lastMouseAngle = 0;
+        let intakeCamPhase = 0, exhaustCamPhase = 0;
 
-        // モード切替
-        modeRadios.forEach(radio => {
-            radio.addEventListener('change', (e) => {
-                const mode = e.target.value;
-                if (mode === '180') {
-                    group180.style.display = 'block';
-                    group360.style.display = 'none';
-                    updateNumbersPosition(false);
-                } else if (mode === '360') {
-                    group180.style.display = 'none';
-                    group360.style.display = 'block';
-                    updateNumbersPosition(false);
-                } else {
-                    // 「4段全部」
-                    group180.style.display = 'block';
-                    group360.style.display = 'block';
-                    updateNumbersPosition(true); // 重なり防止
-                }
-            });
-        });
+        const toRad = deg => deg * Math.PI / 180;
 
-        const ticksGroup = document.getElementById('ticks');
-        const cx = 250, cy = 250, radius = 240;
+        function calculateDynamicLift(durationDeg) {
+            return 12 + Math.max(0, (durationDeg - 180) * 0.12);
+        }
 
-        // 初期描画
-        function drawProtractor() {
-            for (let i = 0; i < 360; i++) {
-                const angleRad = (i * Math.PI) / 180;
-                let tickLength = (i % 10 === 0) ? 30 : (i % 5 === 0) ? 18 : 12;
-                const x1 = cx + radius * Math.cos(angleRad), y1 = cy + radius * Math.sin(angleRad);
-                const x2 = cx + (radius - tickLength) * Math.cos(angleRad), y2 = cy + (radius - tickLength) * Math.sin(angleRad);
-                const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-                line.setAttribute("x1", x1); line.setAttribute("y1", y1);
-                line.setAttribute("x2", x2); line.setAttribute("y2", y2);
-                line.classList.add('tick');
-                if (i % 10 === 0) line.classList.add('major');
-                ticksGroup.appendChild(line);
+        function durationToTopR(lift, durationDeg) {
+            const halfAngRad = toRad(durationDeg / 4);
+            const cosA = Math.cos(halfAngRad);
+            return Math.max(baseR * 0.1, (baseR - (baseR + lift) * cosA) / (1 - cosA));
+        }
+
+        function generateSmoothCamPath(lift, durationDeg) {
+            const topR = durationToTopR(lift, durationDeg);
+            const d = (baseR + lift) - topR;
+            if (d <= 0 || isNaN(d)) return `M 0,-${baseR} A ${baseR} ${baseR} 0 1 1 0.01,-${baseR} Z`;
+            const sinT = Math.max(-1, Math.min(1, (baseR - topR) / d));
+            const cosT = Math.sqrt(1 - sinT * sinT);
+            const x1 = baseR * cosT, y1 = -baseR * sinT;
+            const x2 = topR * cosT, y2 = -d - (topR * sinT);
+            return `M ${x1.toFixed(2)},${y1.toFixed(2)} A ${baseR} ${baseR} 0 1 1 ${(-x1).toFixed(2)},${y1.toFixed(2)} L ${(-x2).toFixed(2)},${y2.toFixed(2)} A ${topR} ${topR} 0 0 1 ${x2.toFixed(2)},${y2.toFixed(2)} Z`;
+        }
+
+        function getFlatFollowerLift(durationDeg, camRotationDeg) {
+            const lift = calculateDynamicLift(durationDeg);
+            const topR = durationToTopR(lift, durationDeg);
+            const d = (baseR + lift) - topR;
+            let ang = ((camRotationDeg % 360) + 540) % 360 - 180;
+            const thetaRad = toRad(ang);
+            const limitAngRad = toRad(durationDeg / 4);
+            return Math.abs(thetaRad) < limitAngRad ? Math.max(0, d * Math.cos(thetaRad) + topR - baseR) : 0;
+        }
+
+        function updateDurLabel(open, close, lift, color, idSuffix) {
+            const id = `durLabel_${idSuffix}`;
+            let label = el(id);
+            if (!label) {
+                label = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                label.setAttribute("id", id);
+                label.setAttribute("fill", color); label.setAttribute("font-size", "11");
+                label.setAttribute("font-weight", "bold"); label.setAttribute("text-anchor", "middle");
+                el('valveGraph').appendChild(label);
             }
-            updateNumbersPosition(false);
+            if (open === -1) { label.textContent = ""; return; }
+            const actualDur = ((close + 0.5) - (open - 0.5)).toFixed(1).replace(/\.0$/, "");
+            label.setAttribute("x", open + (close - open) / 2);
+            label.setAttribute("y", Math.max(10, 100 - (lift * 1.5) - 8));
+            label.textContent = `${actualDur}°`;
         }
 
-        function updateNumbersPosition(isAllMode) {
-            group180.innerHTML = '';
-            group360.innerHTML = '';
+        function updateValveGraph() {
+            let dInt = "", dExh = "";
+            const overlap = parseFloat(valveOverlapEl.value), phaseAdj = parseFloat(camPhaseEl.value);
+            const iDeg = parseFloat(intDurEl.value), eDeg = parseFloat(exhDurEl.value);
+            let intOpen = -1, intClose = -1, exhOpen = -1, exhClose = -1;
 
-            for (let i = 0; i < 360; i += 10) {
-                const angleRad = (i * Math.PI) / 180;
-                const rot = i + 90;
-
-                // --- 180°往復グループ ---
-                const val180_out = (i > 180) ? 360 - i : i;
-                const p1 = getPos(radius - 48, angleRad);
-                group180.appendChild(createText(p1.x, p1.y, val180_out, 'label-outer', rot));
-
-                const val180_in = 180 - val180_out;
-                const p2 = getPos(radius - 70, angleRad);
-                group180.appendChild(createText(p2.x, p2.y, val180_in, 'label-inner', rot));
-
-                // --- 360°正逆グループ ---
-                let r3, r4, class3;
-                if (isAllMode) {
-                    r3 = radius - 92;   // 4段時は内側へ
-                    r4 = radius - 114;
-                    class3 = 'label-inner'; // 4段時はすべて細字
-                } else {
-                    r3 = radius - 48;   // 単独時は180°と同じ位置
-                    r4 = radius - 70;
-                    class3 = 'label-outer'; // ★ここを修正：単独モード時は太字(label-outer)にする
-                }
-
-                const val360_fwd = i;
-                const p3 = getPos(r3, angleRad);
-                group360.appendChild(createText(p3.x, p3.y, val360_fwd, class3, rot));
-
-                const val360_rev = (i === 0) ? 0 : 360 - i;
-                const p4 = getPos(r4, angleRad);
-                group360.appendChild(createText(p4.x, p4.y, val360_rev, 'label-inner', rot));
+            for (let i = 0; i <= 720; i += 0.5) {
+                const baseCam = (i * camRatio + (phaseAdj * camRatio) + 180);
+                const relExh = baseCam + (exhaustCamPhase * camRatio) + 135 - overlap / 2;
+                const relInt = baseCam + (intakeCamPhase * camRatio) - 135 + overlap / 2;
+                const lEx = getFlatFollowerLift(eDeg, relExh - (180 - overlap / 2));
+                const lIn = getFlatFollowerLift(iDeg, relInt - (180 + overlap / 2));
+                dExh += (i === 0 ? "M" : "L") + i + "," + (100 - lEx * 1.5);
+                dInt += (i === 0 ? "M" : "L") + i + "," + (100 - lIn * 1.5);
+                if (lIn > 0.000001) { if (intOpen === -1) intOpen = i; intClose = i; }
+                if (lEx > 0.000001) { if (exhOpen === -1) exhOpen = i; exhClose = i; }
             }
+            el('graphExhPath').setAttribute('d', dExh);
+            el('graphIntPath').setAttribute('d', dInt);
+            const setMarker = (id, x, isStart) => {
+                const m = el(id); if (!m) return;
+                if (x === -1) { m.setAttribute('opacity', '0'); return; }
+                m.setAttribute('opacity', '1');
+                const cx = isStart ? (x - 0.5) : (x + 0.5);
+                m.querySelector('line').setAttribute('x1', cx); m.querySelector('line').setAttribute('x2', cx);
+                m.querySelector('text').setAttribute('x', cx);
+                m.querySelector('text').textContent = `${(720 - cx).toFixed(1).replace(/\.0$/, "")}°`;
+            };
+            setMarker('markerExStart', exhOpen, true); setMarker('markerExEnd', exhClose, false);
+            setMarker('markerIntStart', intOpen, true); setMarker('markerIntEnd', intClose, false);
+            updateDurLabel(exhOpen, exhClose, calculateDynamicLift(eDeg), "#e45b5b", "exh");
+            updateDurLabel(intOpen, intClose, calculateDynamicLift(iDeg), "#4aa3ff", "int");
         }
 
-        function getPos(r, rad) { return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) }; }
-        function createText(x, y, val, className, rotation) {
-            const t = document.createElementNS("http://www.w3.org/2000/svg", "text");
-            t.setAttribute("x", x); t.setAttribute("y", y);
-            t.setAttribute("text-anchor", "middle"); t.setAttribute("dominant-baseline", "middle");
-            t.classList.add(className); t.setAttribute("transform", `rotate(${rotation}, ${x}, ${y})`);
-            t.textContent = val; return t;
+        function updateCamShapes() {
+            const iDeg = parseFloat(intDurEl.value), eDeg = parseFloat(exhDurEl.value);
+            camPathInt.setAttribute('d', generateSmoothCamPath(calculateDynamicLift(iDeg), iDeg));
+            camPathExh.setAttribute('d', generateSmoothCamPath(calculateDynamicLift(eDeg), eDeg));
+            updateLabels(); updateValveGraph();
         }
 
-        drawProtractor();
-    </script>
+        function updateLabels() {
+            rpmVal.textContent = `${rpmEl.value} rpm`; el('ignVal').textContent = `${ignAdvEl.value} °`;
+            el('camPhaseVal').textContent = `${camPhaseEl.value} °`; el('valveOverlapVal').textContent = `${valveOverlapEl.value} °`;
+            el('camGapVal').textContent = `${camGapEl.value} px`; el('intDurationVal').textContent = `${intDurEl.value} °`;
+            el('exhDurationVal').textContent = `${exhDurEl.value} °`; el('intakeCamPhaseVal').textContent = `${intakeCamPhase} °`;
+            el('exhaustCamPhaseVal').textContent = `${exhaustCamPhase} °`;
+            el('crankAngleVal').textContent = `${Math.round((720 - crankAngle) % 720)} °`;
+        }
+
+        function step(now) {
+            const dt = (now - last) / 1000; last = now;
+            if (autoRotateToggleEl.checked) crankAngle = (crankAngle - (parseFloat(rpmEl.value) * 720 / 60) * dt % 720 + 720) % 720;
+            const displayAngle = (720 - crankAngle) % 720;
+            dialMarks.setAttribute('transform', `translate(50, 50) rotate(${crankAngle})`);
+
+            if (el('showSpark').checked) {
+                const sparkTriggerAngle = (parseFloat(ignAdvEl.value) + 720) % 720;
+                let diff = Math.abs(displayAngle - sparkTriggerAngle);
+                if (diff > 360) diff = 720 - diff;
+                el('sparkGroup').setAttribute('opacity', diff < 3 ? '1' : '0');
+            } else el('sparkGroup').setAttribute('opacity', '0');
+
+            const graphX = 720 - displayAngle;
+            currentPosLine.setAttribute('x1', graphX); currentPosLine.setAttribute('x2', graphX);
+
+            const theta = toRad(crankAngle % 360);
+            const yP = 350 - (crankRadius * Math.cos(theta) + Math.sqrt(rodLength ** 2 - (crankRadius * Math.sin(theta)) ** 2));
+            piston.setAttribute('y', yP - 40);
+            rod.setAttribute('x1', 165); rod.setAttribute('y1', yP + 40);
+            rod.setAttribute('x2', 165 + crankRadius * Math.sin(theta)); rod.setAttribute('y2', 350 - crankRadius * Math.cos(theta));
+            crank.setAttribute('transform', `translate(165,350) rotate(${crankAngle})`);
+            crankCrosshair.setAttribute('transform', `translate(165,350) rotate(${(crankAngle % 360) + CRANK_TDC_OFFSET + parseFloat(ignAdvEl.value)})`);
+
+            const gap = parseFloat(camGapEl.value), overlap = parseFloat(valveOverlapEl.value), phaseAdj = parseFloat(camPhaseEl.value);
+            const baseCam = (crankAngle * camRatio + (phaseAdj * camRatio) + 180);
+            el('exhGroup').setAttribute("transform", `translate(${550 - gap / 2}, 190)`);
+            el('intGroup').setAttribute("transform", `translate(${550 + gap / 2}, 190)`);
+
+            const aEx = (baseCam + (exhaustCamPhase * camRatio) + 135 - overlap / 2);
+            const aIn = (baseCam + (intakeCamPhase * camRatio) - 135 + overlap / 2);
+            camExh.setAttribute('transform', `rotate(${aEx % 360})`); camInt.setAttribute('transform', `rotate(${aIn % 360})`);
+
+            const liftEx = getFlatFollowerLift(parseFloat(exhDurEl.value), aEx - (180 - overlap / 2));
+            const liftIn = getFlatFollowerLift(parseFloat(intDurEl.value), aIn - (180 + overlap / 2));
+            const bVis = baseR - 35;
+            exhValveAssembly.setAttribute('transform', `rotate(${-overlap / 2}) translate(0, ${liftEx + bVis})`);
+            intValveAssembly.setAttribute('transform', `rotate(${overlap / 2}) translate(0, ${liftIn + bVis})`);
+
+            if (el('intValveLightCanvas')) el('intValveLightCanvas').setAttribute('fill', liftIn > 0.001 ? '#4aa3ff' : '#333');
+            if (el('exhValveLightCanvas')) el('exhValveLightCanvas').setAttribute('fill', liftEx > 0.001 ? '#e45b5b' : '#333');
+
+            if (valveStatusLabel) {
+                if (liftIn > 0.001 && liftEx > 0.001) { valveStatusLabel.textContent = 'OVERLAP'; valveStatusLabel.style.color = '#f6e27a'; }
+                else if (liftIn > 0.001) { valveStatusLabel.textContent = 'INTAKE OPEN'; valveStatusLabel.style.color = '#4aa3ff'; }
+                else if (liftEx > 0.001) { valveStatusLabel.textContent = 'EXHAUST OPEN'; valveStatusLabel.style.color = '#e45b5b'; }
+                else { valveStatusLabel.textContent = 'ALL CLOSED'; valveStatusLabel.style.color = '#aaa'; }
+            }
+            updateLabels(); requestAnimationFrame(step);
+        }
+
+        // --- タッチ＆マウス共通処理 ---
+        function getAngle(e) {
+            const rect = jogDial.getBoundingClientRect();
+            const cx = e.touches ? e.touches[0].clientX : e.clientX;
+            const cy = e.touches ? e.touches[0].clientY : e.clientY;
+            return Math.atan2(cy - (rect.top + rect.height / 2), cx - (rect.left + rect.width / 2)) * 180 / Math.PI;
+        }
+        const startH = e => { if (!autoRotateToggleEl.checked) { isDragging = true; lastMouseAngle = getAngle(e); if (e.cancelable) e.preventDefault(); } };
+        const moveH = e => {
+            if (isDragging) {
+                const curA = getAngle(e); let delta = curA - lastMouseAngle;
+                if (delta > 180) delta -= 360; if (delta < -180) delta += 360;
+                crankAngle = (crankAngle + delta + 720) % 720; lastMouseAngle = curA;
+                if (e.cancelable) e.preventDefault();
+            }
+        };
+        jogDial.addEventListener('mousedown', startH); window.addEventListener('mousemove', moveH); window.addEventListener('mouseup', () => isDragging = false);
+        jogDial.addEventListener('touchstart', startH, { passive: false }); window.addEventListener('touchmove', moveH, { passive: false }); window.addEventListener('touchend', () => isDragging = false);
+
+        el('crankAnglePlus10').onclick = () => { crankAngle = (crankAngle - 1 + 720) % 720; };
+        el('crankAngleMinus10').onclick = () => { crankAngle = (crankAngle + 1) % 720; };
+        autoRotateToggleEl.onchange = () => { el('crankAnglePlus10').disabled = el('crankAngleMinus10').disabled = autoRotateToggleEl.checked; };
+
+        const inputs = ['rpm', 'ignAdv', 'camPhase', 'valveOverlap', 'camGap', 'intDuration', 'exhDuration'];
+        inputs.forEach(id => el(id).addEventListener('input', updateCamShapes));
+
+        el('camPhaseMinus').onclick = () => { camPhaseEl.value = parseFloat(camPhaseEl.value) - 1; updateCamShapes(); };
+        el('camPhasePlus').onclick = () => { camPhaseEl.value = parseFloat(camPhaseEl.value) + 1; updateCamShapes(); };
+        el('intakeCamPhaseMinus').onclick = () => { intakeCamPhase -= 1; updateLabels(); updateValveGraph(); };
+        el('intakeCamPhasePlus').onclick = () => { intakeCamPhase += 1; updateLabels(); updateValveGraph(); };
+        el('exhaustCamPhaseMinus').onclick = () => { exhaustCamPhase -= 1; updateLabels(); updateValveGraph(); };
+        el('exhaustCamPhasePlus').onclick = () => { exhaustCamPhase += 1; updateLabels(); updateValveGraph(); };
+        el('ignAdvMinus').onclick = () => { ignAdvEl.value--; updateLabels(); };
+        el('ignAdvPlus').onclick = () => { ignAdvEl.value++; updateLabels(); };
+
+        updateCamShapes(); requestAnimationFrame(step);
+    })();
+</script>
+
 </body>
+
 </html>
