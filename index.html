@@ -31,28 +31,24 @@
             min-width: 200px;
             /* あまりに狭くなりすぎないようガード */
         }
-
-        header {
-            grid-column: 1 / -1;
-            padding: 12px 16px;
-            border-bottom: 1px solid #222;
-        }
-
-        .group {
-            margin-bottom: 18px;
-            padding-bottom: 12px;
-            border-bottom: 1px dashed #222;
-        }
-
-        .group h3 {
-            margin: 0 0 8px;
-            font-size: 14px;
-            color: #9db3ff;
-        }
-
-        .row {
-            display: grid;
-            grid-template-columns: 1fr 36px;
+header { grid-column: 1 / -1; padding: 4px 16px; border-bottom: 1px solid #222; }
+.panel { padding: 16px; border-right: 1px solid #222; overflow-y: auto; }
+.group { margin-bottom: 18px; padding-bottom: 12px; border-bottom: 1px dashed #222; }
+.group h3 { margin: 0 0 8px; font-size: 14px; color: #9db3ff; }
+.row { display: grid; grid-template-columns: 1fr 36px; align-items: center; gap: 8px; margin: 8px 0; }
+label { font-size: 13px; }
+input[type="range"] { width: 100%; }
+.value { font-variant-numeric: tabular-nums; text-align: right; color: #aaa; font-size: 12px; }
+.stage { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; font-size: 12px; }
+.badge { padding: 2px 6px; border: 1px solid #333; border-radius: 4px; }
+.badge.intake { color: #7cbafc; border-color: #2a3f66; }
+.badge.comp { color: #f6e27a; border-color: #5a4f2a; }
+.badge.power { color: #a4f7a4; border-color: #294b29; }
+.badge.exhaust{ color: #f19c9c; border-color: #5b2a2a; }
+.canvas { 
+    position: relative; /* ジョグダイヤルを配置するために必要 */
+    display: flex; 
+    justify-content: center; 
             align-items: center;
             gap: 8px;
             margin: 8px 0;
