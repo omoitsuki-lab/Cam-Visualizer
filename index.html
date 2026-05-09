@@ -31,26 +31,95 @@
             min-width: 200px;
             /* あまりに狭くなりすぎないようガード */
         }
-header { grid-column: 1 / -1; padding: 4px 16px; border-bottom: 1px solid #222; }
-.panel { padding: 16px; border-right: 1px solid #222; overflow-y: auto; }
-.group { margin-bottom: 18px; padding-bottom: 12px; border-bottom: 1px dashed #222; }
-.group h3 { margin: 0 0 8px; font-size: 14px; color: #9db3ff; }
-.row { display: grid; grid-template-columns: 1fr 36px; align-items: center; gap: 8px; margin: 8px 0; }
-label { font-size: 13px; }
-input[type="range"] { width: 100%; }
-.value { font-variant-numeric: tabular-nums; text-align: right; color: #aaa; font-size: 12px; }
-.stage { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; font-size: 12px; }
-.badge { padding: 2px 6px; border: 1px solid #333; border-radius: 4px; }
-.badge.intake { color: #7cbafc; border-color: #2a3f66; }
-.badge.comp { color: #f6e27a; border-color: #5a4f2a; }
-.badge.power { color: #a4f7a4; border-color: #294b29; }
-.badge.exhaust{ color: #f19c9c; border-color: #5b2a2a; }
-.canvas { 
-    position: relative; /* ジョグダイヤルを配置するために必要 */
-    display: flex; 
-    justify-content: center; 
+
+        header {
+            grid-column: 1 / -1;
+            padding: 4px 16px;
+            border-bottom: 1px solid #222;
+        }
+
+        .panel {
+            padding: 16px;
+            border-right: 1px solid #222;
+            overflow-y: auto;
+        }
+
+        .group {
+            margin-bottom: 18px;
+            padding-bottom: 12px;
+            border-bottom: 1px dashed #222;
+        }
+
+        .group h3 {
+            margin: 0 0 8px;
+            font-size: 14px;
+            color: #9db3ff;
+        }
+
+        .row {
+            display: grid;
+            grid-template-columns: 1fr 36px;
             align-items: center;
-    background: radial-gradient(1200px 600px at 60% 40%, #0c1018 0%, #0b0e14 40%, #0a0d13 100%); 
+            gap: 8px;
+            margin: 8px 0;
+        }
+
+        label {
+            font-size: 13px;
+        }
+
+        input[type="range"] {
+            width: 100%;
+        }
+
+        .value {
+            font-variant-numeric: tabular-nums;
+            text-align: right;
+            color: #aaa;
+            font-size: 12px;
+        }
+
+        .stage {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin-top: 6px;
+            font-size: 12px;
+        }
+
+        .badge {
+            padding: 2px 6px;
+            border: 1px solid #333;
+            border-radius: 4px;
+        }
+
+        .badge.intake {
+            color: #7cbafc;
+            border-color: #2a3f66;
+        }
+
+        .badge.comp {
+            color: #f6e27a;
+            border-color: #5a4f2a;
+        }
+
+        .badge.power {
+            color: #a4f7a4;
+            border-color: #294b29;
+        }
+
+        .badge.exhaust {
+            color: #f19c9c;
+            border-color: #5b2a2a;
+        }
+
+        .canvas {
+            position: relative;
+            /* ジョグダイヤルを配置するために必要 */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: radial-gradient(1200px 600px at 60% 40%, #0c1018 0%, #0b0e14 40%, #0a0d13 100%);
         }
 
         .badge.exhaust {
@@ -120,15 +189,52 @@ input[type="range"] { width: 100%; }
             /* 700pxから画面高さ基準へ */
         }
 
-.label { font: 15px sans-serif; fill:#bfc7d9; }
-.metal { fill:#8b8f99; stroke:#b7becb; stroke-width:2; }
-.red { fill:#e45b5b; }
-.blue { fill:#4aa3ff; }
-.green { fill:#6be28f; }
-.overlay { fill:none; stroke:#999; stroke-width:1.5; stroke-dasharray:4 4; }
-.spark { fill:#ffd059; stroke:#ffefaf; stroke-width:1.5; filter:url(#glow); }
-.camCross { stroke:#ffd700; stroke-width:3; }
-.crankCross { stroke:#00ffff; stroke-width:3; }
+        .label {
+            font: 15px sans-serif;
+            fill: #bfc7d9;
+        }
+
+        .metal {
+            fill: #8b8f99;
+            stroke: #b7becb;
+            stroke-width: 2;
+        }
+
+        .red {
+            fill: #e45b5b;
+        }
+
+        .blue {
+            fill: #4aa3ff;
+        }
+
+        .green {
+            fill: #6be28f;
+        }
+
+        .overlay {
+            fill: none;
+            stroke: #999;
+            stroke-width: 1.5;
+            stroke-dasharray: 4 4;
+        }
+
+        .spark {
+            fill: #ffd059;
+            stroke: #ffefaf;
+            stroke-width: 1.5;
+            filter: url(#glow);
+        }
+
+        .camCross {
+            stroke: #ffd700;
+            stroke-width: 3;
+        }
+
+        .crankCross {
+            stroke: #00ffff;
+            stroke-width: 3;
+        }
 
         /* 追加したボタンのスタイル */
         .manual-control-buttons {
@@ -193,14 +299,92 @@ input[type="range"] { width: 100%; }
                 /* 表示部を真ん中に配置 */
             }
         }
+
+        /* 徹底線画モード（全パーツ・UI・グラフ背景透過版） */
+        body.line-art-mode { background: #fff !important; color: #000 !important; }
+        body.line-art-mode .panel { background: #fff !important; border-right: 2px solid #000 !important; }
+        body.line-art-mode .group { border-bottom: 1px solid #000 !important; }
+        body.line-art-mode .group h3 { color: #000 !important; border-bottom: 1px solid #000; }
+        body.line-art-mode .canvas { background: #fff !important; }
+
+        /* 操作パネル内の数値テキスト（標準の太さ） */
+        body.line-art-mode .value { color: #000 !important; font-weight: normal !important; }
+
+        /* スライダー・チェックボックスの白抜き修正 */
+        body.line-art-mode input[type="range"] { 
+            appearance: none; background: #fff !important; border: 1px solid #000 !important; height: 6px; border-radius: 3px;
+        }
+        body.line-art-mode input[type="range"]::-webkit-slider-thumb { 
+            appearance: none; width: 16px; height: 16px; background: #fff !important; border: 2px solid #000 !important; border-radius: 50%;
+        }
+        body.line-art-mode input[type="checkbox"] { 
+            appearance: none; width: 16px; height: 16px; background: #fff !important; border: 2px solid #000 !important; border-radius: 3px; position: relative; vertical-align: middle;
+        }
+        body.line-art-mode input[type="checkbox"]:checked::after { 
+            content: "✔"; position: absolute; top: -2px; left: 1px; color: #000 !important; font-size: 14px;
+        }
+
+        /* ボタン */
+        body.line-art-mode button { background: #fff !important; color: #000 !important; border: 2px solid #000 !important; }
+        
+        /* 塗りつぶし要素の白抜き化 */
+        body.line-art-mode .blue, body.line-art-mode .red, body.line-art-mode .green,
+        body.line-art-mode .spark, body.line-art-mode .metal, body.line-art-mode #piston,
+        body.line-art-mode #camPathExh, body.line-art-mode #camPathInt,
+        body.line-art-mode rect[width="150"][height="260"],
+        body.line-art-mode #jogDial circle,
+        body.line-art-mode #crank circle { 
+            fill: #fff !important; stroke: #000 !important; stroke-width: 1.5px !important; filter: none !important; 
+        }
+
+        /* ジョグダイヤルマーカーとコンロッドの白抜き */
+        body.line-art-mode #dialMarks rect { fill: #fff !important; stroke: #000 !important; stroke-width: 1px !important; }
+        body.line-art-mode #rod { fill: #fff !important; stroke: #000 !important; stroke-width: 2px !important; }
+
+        /* 十字線・補助線・テキスト（標準太さ） */
+        body.line-art-mode .camCross, 
+        body.line-art-mode .crankCross,
+        body.line-art-mode #crankCrosshair line,
+        body.line-art-mode .overlay,
+        body.line-art-mode #currentPosLine { stroke: #000 !important; opacity: 1 !important; }
+        body.line-art-mode .label { fill: #000 !important; font-weight: normal !important; }
+        body.line-art-mode #currentPosLine { stroke-dasharray: 4 2 !important; }
+        
+        /* グラフエリアの背景をクリア（透明）にする */
+        body.line-art-mode #graphContainer { background: transparent !important; border: 2px solid #000 !important; }
+        body.line-art-mode #graphExhPath, body.line-art-mode #graphIntPath { stroke: #000 !important; stroke-width: 2px !important; }
+        
+        /* グラフ内の線と文字（背後の絵と混ざるため太さを微調整） */
+        body.line-art-mode #valveGraph line { stroke: #000 !important; opacity: 1 !important; }
+        body.line-art-mode #valveGraph text,
+        body.line-art-mode #lobeCenterEx text,
+        body.line-art-mode #lobeCenterInt text,
+        body.line-art-mode [id^="marker"] text { 
+            stroke: #fff !important; /* 文字の視認性確保のため、細い白文字の縁を付ける（白抜き文字風） */
+            stroke-width: 2px !important;
+            paint-order: stroke;
+            fill: #000 !important; 
+            font-weight: normal !important; 
+        }
+        
+        body.line-art-mode .labels span { color: #000 !important; font-weight: normal !important; opacity: 1 !important; }
+        body.line-art-mode #valveStatus { background: rgba(255,255,255,0.8) !important; border: 2px solid #000 !important; color: #000 !important; box-shadow: none !important; }
+
+        /* スクロールバー */
+        body.line-art-mode ::-webkit-scrollbar { width: 12px; background: #fff; }
+        body.line-art-mode ::-webkit-scrollbar-thumb { background: #fff; border: 1px solid #000; }
     </style>
 </head>
 
 <body>
-    <header>
+    <header style="display:flex; justify-content:space-between; align-items:center;">
         <div style="display:flex; align-items:center; gap:12px;">
             <div class="title-text">Piston & Cam Visualizer</div>
         </div>
+        <!-- モード切り替えスイッチ -->
+        <label style="font-size: 12px; cursor: pointer; background: #333; padding: 4px 10px; border-radius: 4px; margin-right: 16px; color: #fff;">
+            <input id="printMode" type="checkbox" /> 線画モード（背景白）
+        </label>
     </header>
 
     <div class="panel">
@@ -473,7 +657,14 @@ input[type="range"] { width: 100%; }
             const intDurEl = el('intDuration'), exhDurEl = el('exhDuration');
             const valveStatusLabel = el('valveStatus');
             const currentPosLine = el('currentPosLine');
-
+            // 線画モード切り替え
+            el('printMode').onchange = function() {
+                if (this.checked) {
+                    document.body.classList.add('line-art-mode');
+                } else {
+                    document.body.classList.remove('line-art-mode');
+                }
+            };
             const baseR = 32;
             const camRatio = 0.5;
             const CRANK_TDC_OFFSET = 90;
@@ -584,7 +775,7 @@ input[type="range"] { width: 100%; }
                 updateDurLabel(exhOpen, exhClose, calculateDynamicLift(eDeg), "#e45b5b", "exh");
                 updateDurLabel(intOpen, intClose, calculateDynamicLift(iDeg), "#4aa3ff", "int");
             }
-            
+
             function updateCamShapes() {
                 const iDeg = parseFloat(intDurEl.value), eDeg = parseFloat(exhDurEl.value);
                 camPathInt.setAttribute('d', generateSmoothCamPath(calculateDynamicLift(iDeg), iDeg));
@@ -607,12 +798,39 @@ input[type="range"] { width: 100%; }
                 const displayAngle = (720 - crankAngle) % 720;
                 dialMarks.setAttribute('transform', `translate(50, 50) rotate(${crankAngle})`);
 
+                // --- 視覚補助の制御（上書き箇所） ---
+                const isTdcVisible = el('showTDC').checked;
+                const displayStyle = isTdcVisible ? 'inline' : 'none';
+
+                // TDC, BDC, Fマークの線とテキストの表示切り替え
+                ['tdcLine', 'bdcLine', 'crankCenterLine'].forEach(id => {
+                    const target = el(id);
+                    if (target) {
+                        target.style.display = displayStyle;
+                        // 線の次にあるテキスト要素（TDC/BDC等の文字）も連動
+                        if (target.nextElementSibling && target.nextElementSibling.tagName === 'text') {
+                            target.nextElementSibling.style.display = displayStyle;
+                        }
+                    }
+                });
+
+                // カムセンターの背景破線と十字線の表示切り替え
+                if (el('camCenterLine')) el('camCenterLine').style.display = displayStyle;
+                if (crankCrosshair) crankCrosshair.style.display = displayStyle;
+                document.querySelectorAll('.camCross').forEach(line => {
+                    line.style.display = displayStyle;
+                });
+
+                // 点火スパーク表示の制御
                 if (el('showSpark').checked) {
                     const sparkTriggerAngle = (parseFloat(ignAdvEl.value) + 720) % 720;
                     let diff = Math.abs(displayAngle - sparkTriggerAngle);
                     if (diff > 360) diff = 720 - diff;
                     el('sparkGroup').setAttribute('opacity', diff < 3 ? '1' : '0');
-                } else el('sparkGroup').setAttribute('opacity', '0');
+                } else {
+                    el('sparkGroup').setAttribute('opacity', '0');
+                }
+                // --- 視覚補助の制御（ここまで） ---
 
                 const graphX = 720 - displayAngle;
                 currentPosLine.setAttribute('x1', graphX); currentPosLine.setAttribute('x2', graphX);
@@ -624,6 +842,7 @@ input[type="range"] { width: 100%; }
                 rod.setAttribute('x2', 165 + crankRadius * Math.sin(theta)); rod.setAttribute('y2', 350 - crankRadius * Math.cos(theta));
                 crank.setAttribute('transform', `translate(165,350) rotate(${crankAngle})`);
                 crankCrosshair.setAttribute('transform', `translate(165,350) rotate(${(crankAngle % 360) + CRANK_TDC_OFFSET + parseFloat(ignAdvEl.value)})`);
+                
 
                 const gap = parseFloat(camGapEl.value), overlap = parseFloat(valveOverlapEl.value), phaseAdj = parseFloat(camPhaseEl.value);
                 const baseCam = (crankAngle * camRatio + (phaseAdj * camRatio) + 180);
@@ -640,9 +859,27 @@ input[type="range"] { width: 100%; }
                 exhValveAssembly.setAttribute('transform', `rotate(${-overlap / 2}) translate(0, ${liftEx + bVis})`);
                 intValveAssembly.setAttribute('transform', `rotate(${overlap / 2}) translate(0, ${liftIn + bVis})`);
 
-                if (el('intValveLightCanvas')) el('intValveLightCanvas').setAttribute('fill', liftIn > 0.001 ? '#4aa3ff' : '#333');
-                if (el('exhValveLightCanvas')) el('exhValveLightCanvas').setAttribute('fill', liftEx > 0.001 ? '#e45b5b' : '#333');
-
+                // IN/EXランプの白抜き・黒塗り制御
+                const isLineArt = el('printMode').checked;
+                // IN/EXランプ（開＝黒、閉＝白抜き）
+                if (el('intValveLightCanvas')) {
+                    if (isLineArt) {
+                        el('intValveLightCanvas').setAttribute('fill', liftIn > 0.001 ? '#000' : '#fff');
+                        el('intValveLightCanvas').setAttribute('stroke', '#000');
+                    } else {
+                        el('intValveLightCanvas').setAttribute('fill', liftIn > 0.001 ? '#4aa3ff' : '#333');
+                        el('intValveLightCanvas').setAttribute('stroke', '#2a3f66');
+                    }
+                }
+                if (el('exhValveLightCanvas')) {
+                    if (isLineArt) {
+                        el('exhValveLightCanvas').setAttribute('fill', liftEx > 0.001 ? '#000' : '#fff');
+                        el('exhValveLightCanvas').setAttribute('stroke', '#000');
+                    } else {
+                        el('exhValveLightCanvas').setAttribute('fill', liftEx > 0.001 ? '#e45b5b' : '#333');
+                        el('exhValveLightCanvas').setAttribute('stroke', '#5b2a2a');
+                    }
+                }
                 if (valveStatusLabel) {
                     if (liftIn > 0.001 && liftEx > 0.001) { valveStatusLabel.textContent = 'OVERLAP'; valveStatusLabel.style.color = '#f6e27a'; }
                     else if (liftIn > 0.001) { valveStatusLabel.textContent = 'INTAKE OPEN'; valveStatusLabel.style.color = '#4aa3ff'; }
