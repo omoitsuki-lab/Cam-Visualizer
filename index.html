@@ -301,78 +301,195 @@
         }
 
         /* 徹底線画モード（全パーツ・UI・グラフ背景透過版） */
-        body.line-art-mode { background: #fff !important; color: #000 !important; }
-        body.line-art-mode .panel { background: #fff !important; border-right: 2px solid #000 !important; }
-        body.line-art-mode .group { border-bottom: 1px solid #000 !important; }
-        body.line-art-mode .group h3 { color: #000 !important; border-bottom: 1px solid #000; }
-        body.line-art-mode .canvas { background: #fff !important; }
+        body.line-art-mode {
+            background: #fff !important;
+            color: #000 !important;
+        }
+
+        body.line-art-mode .panel {
+            background: #fff !important;
+            border-right: 2px solid #000 !important;
+        }
+
+        body.line-art-mode .group {
+            border-bottom: 1px solid #000 !important;
+        }
+
+        body.line-art-mode .group h3 {
+            color: #000 !important;
+            border-bottom: 1px solid #000;
+        }
+
+        body.line-art-mode .canvas {
+            background: #fff !important;
+        }
 
         /* 操作パネル内の数値テキスト（標準の太さ） */
-        body.line-art-mode .value { color: #000 !important; font-weight: normal !important; }
+        body.line-art-mode .value {
+            color: #000 !important;
+            font-weight: normal !important;
+        }
 
         /* スライダー・チェックボックスの白抜き修正 */
-        body.line-art-mode input[type="range"] { 
-            appearance: none; background: #fff !important; border: 1px solid #000 !important; height: 6px; border-radius: 3px;
+        body.line-art-mode input[type="range"] {
+            appearance: none;
+            background: #fff !important;
+            border: 1px solid #000 !important;
+            height: 6px;
+            border-radius: 3px;
         }
-        body.line-art-mode input[type="range"]::-webkit-slider-thumb { 
-            appearance: none; width: 16px; height: 16px; background: #fff !important; border: 2px solid #000 !important; border-radius: 50%;
+
+        body.line-art-mode input[type="range"]::-webkit-slider-thumb {
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            background: #fff !important;
+            border: 2px solid #000 !important;
+            border-radius: 50%;
         }
-        body.line-art-mode input[type="checkbox"] { 
-            appearance: none; width: 16px; height: 16px; background: #fff !important; border: 2px solid #000 !important; border-radius: 3px; position: relative; vertical-align: middle;
+
+        body.line-art-mode input[type="checkbox"] {
+            appearance: none;
+            width: 14px;
+            height: 14px;
+            background: #fff !important;
+            border: 1px solid #000 !important;
+            /* 枠線を黒に */
+            border-radius: 2px;
+            position: relative;
+            vertical-align: middle;
+            cursor: pointer;
         }
-        body.line-art-mode input[type="checkbox"]:checked::after { 
-            content: "✔"; position: absolute; top: -2px; left: 1px; color: #000 !important; font-size: 14px;
+
+        /* チェックを入れた時のレ点の色 */
+        body.line-art-mode input[type="checkbox"]:checked::after {
+            content: "✔";
+            position: absolute;
+            top: -3px;
+            left: 1px;
+            color: #000 !important;
+            font-size: 12px;
         }
 
         /* ボタン */
-        body.line-art-mode button { background: #fff !important; color: #000 !important; border: 2px solid #000 !important; }
-        
+        body.line-art-mode button {
+            background: #fff !important;
+            color: #000 !important;
+            border: 2px solid #000 !important;
+        }
+
         /* 塗りつぶし要素の白抜き化 */
-        body.line-art-mode .blue, body.line-art-mode .red, body.line-art-mode .green,
-        body.line-art-mode .spark, body.line-art-mode .metal, body.line-art-mode #piston,
-        body.line-art-mode #camPathExh, body.line-art-mode #camPathInt,
+        body.line-art-mode .blue,
+        body.line-art-mode .red,
+        body.line-art-mode .green,
+        body.line-art-mode .spark,
+        body.line-art-mode .metal,
+        body.line-art-mode #piston,
+        body.line-art-mode #camPathExh,
+        body.line-art-mode #camPathInt,
         body.line-art-mode rect[width="150"][height="260"],
         body.line-art-mode #jogDial circle,
-        body.line-art-mode #crank circle { 
-            fill: #fff !important; stroke: #000 !important; stroke-width: 1.5px !important; filter: none !important; 
+        body.line-art-mode #crank circle {
+            fill: #fff !important;
+            stroke: #000 !important;
+            stroke-width: 1.5px !important;
+            filter: none !important;
         }
 
         /* ジョグダイヤルマーカーとコンロッドの白抜き */
-        body.line-art-mode #dialMarks rect { fill: #fff !important; stroke: #000 !important; stroke-width: 1px !important; }
-        body.line-art-mode #rod { fill: #fff !important; stroke: #000 !important; stroke-width: 2px !important; }
+        body.line-art-mode #dialMarks rect {
+            fill: #fff !important;
+            stroke: #000 !important;
+            stroke-width: 1px !important;
+        }
+
+        /* 修正後：コンロッドをピストンの後ろに配置し、白抜きに見せる設定 */
+        body.line-art-mode #rod {
+            /* stroke自体を白にし、外側に黒い「影」を付けることで縁取り（白抜き棒）を再現 */
+            stroke: #fff !important;
+            stroke-width: 8px !important;
+            /* 内側の白線の太さ */
+            stroke-linecap: round;
+            /* ドロップシャドウを上下左右に0距離で配置し、縁取りを作る */
+            filter: drop-shadow(1px 0 0 #000) drop-shadow(-1px 0 0 #000) drop-shadow(0 1px 0 #000) drop-shadow(0 -1px 0 #000) !important;
+        }
 
         /* 十字線・補助線・テキスト（標準太さ） */
-        body.line-art-mode .camCross, 
+        body.line-art-mode .camCross,
         body.line-art-mode .crankCross,
         body.line-art-mode #crankCrosshair line,
         body.line-art-mode .overlay,
-        body.line-art-mode #currentPosLine { stroke: #000 !important; opacity: 1 !important; }
-        body.line-art-mode .label { fill: #000 !important; font-weight: normal !important; }
-        body.line-art-mode #currentPosLine { stroke-dasharray: 4 2 !important; }
-        
+        body.line-art-mode #currentPosLine {
+            stroke: #000 !important;
+            opacity: 1 !important;
+        }
+
+        body.line-art-mode .label {
+            fill: #000 !important;
+            font-weight: normal !important;
+        }
+
+        body.line-art-mode #currentPosLine {
+            stroke-dasharray: 4 2 !important;
+        }
+
         /* グラフエリアの背景をクリア（透明）にする */
-        body.line-art-mode #graphContainer { background: transparent !important; border: 2px solid #000 !important; }
-        body.line-art-mode #graphExhPath, body.line-art-mode #graphIntPath { stroke: #000 !important; stroke-width: 2px !important; }
-        
+        body.line-art-mode #graphContainer {
+            background: transparent !important;
+            border: 2px solid #000 !important;
+        }
+
+        body.line-art-mode #graphContainer div {
+            color: #000 !important;
+        }
+
+        body.line-art-mode #graphExhPath,
+        body.line-art-mode #graphIntPath {
+            stroke: #000 !important;
+            stroke-width: 2px !important;
+        }
+
         /* グラフ内の線と文字（背後の絵と混ざるため太さを微調整） */
-        body.line-art-mode #valveGraph line { stroke: #000 !important; opacity: 1 !important; }
+        body.line-art-mode #valveGraph line {
+            stroke: #000 !important;
+            opacity: 1 !important;
+        }
+
         body.line-art-mode #valveGraph text,
         body.line-art-mode #lobeCenterEx text,
         body.line-art-mode #lobeCenterInt text,
-        body.line-art-mode [id^="marker"] text { 
-            stroke: #fff !important; /* 文字の視認性確保のため、細い白文字の縁を付ける（白抜き文字風） */
+        body.line-art-mode [id^="marker"] text {
+            stroke: #fff !important;
+            /* 文字の視認性確保のため、細い白文字の縁を付ける（白抜き文字風） */
             stroke-width: 2px !important;
             paint-order: stroke;
-            fill: #000 !important; 
-            font-weight: normal !important; 
+            fill: #000 !important;
+            font-weight: normal !important;
         }
-        
-        body.line-art-mode .labels span { color: #000 !important; font-weight: normal !important; opacity: 1 !important; }
-        body.line-art-mode #valveStatus { background: rgba(255,255,255,0.8) !important; border: 2px solid #000 !important; color: #000 !important; box-shadow: none !important; }
+
+        body.line-art-mode .labels span {
+            color: #000 !important;
+            font-weight: normal !important;
+            opacity: 1 !important;
+        }
+
+        body.line-art-mode #valveStatus {
+            background: rgba(255, 255, 255, 0.8) !important;
+            border: 2px solid #000 !important;
+            color: #000 !important;
+            box-shadow: none !important;
+        }
 
         /* スクロールバー */
-        body.line-art-mode ::-webkit-scrollbar { width: 12px; background: #fff; }
-        body.line-art-mode ::-webkit-scrollbar-thumb { background: #fff; border: 1px solid #000; }
+        body.line-art-mode ::-webkit-scrollbar {
+            width: 12px;
+            background: #fff;
+        }
+
+        body.line-art-mode ::-webkit-scrollbar-thumb {
+            background: #fff;
+            border: 1px solid #000;
+        }
     </style>
 </head>
 
@@ -381,8 +498,8 @@
         <div style="display:flex; align-items:center; gap:12px;">
             <div class="title-text">Piston & Cam Visualizer</div>
         </div>
-        <!-- モード切り替えスイッチ -->
-        <label style="font-size: 12px; cursor: pointer; background: #333; padding: 4px 10px; border-radius: 4px; margin-right: 16px; color: #fff;">
+        <label
+            style="font-size: 12px; cursor: pointer; background: #333; padding: 4px 10px; border-radius: 4px; margin-right: 16px; color: #fff;">
             <input id="printMode" type="checkbox" /> 線画モード（背景白）
         </label>
     </header>
@@ -525,7 +642,14 @@
 
         <div id="graphContainer"
             style="position: absolute; top: 420px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 800px; height: 120px; background: rgba(15, 17, 21, 0.8); border: 1px solid #333; border-radius: 8px; pointer-events: none; z-index: 10;">
-            <svg id="valveGraph" width="100%" height="100%" viewBox="0 0 720 100" preserveAspectRatio="none">
+
+            <div
+                style="position: absolute; right: 10px; top: -28px; font-size: 12px; color: #aaa; pointer-events: auto;">
+                <label style="cursor: pointer; display: flex; align-items: center; gap: 4px;"><input
+                        id="useAbbrNotation" type="checkbox"> BTDC/ATDC表記</label>
+            </div>
+
+            <svg id="valveGraph" width="100%" height="100%" viewBox="0 0 720 100" preserveAspectRatio="none" style="display: block; width: 100%;">
                 <line x1="0" y1="0" x2="0" y2="100" stroke="#444" stroke-width="1" />
                 <line x1="180" y1="0" x2="180" y2="100" stroke="#222" stroke-width="1" stroke-dasharray="4" />
                 <line x1="360" y1="0" x2="360" y2="100" stroke="#444" stroke-width="1" />
@@ -592,8 +716,8 @@
             <text x="275" y="350" dy="4" class="label" style="font-size:12px;">Fマーク</text>
             <line id="camCenterLine" x1="350" y1="190" x2="800" y2="190" class="overlay" />
 
-            <rect id="piston" x="100" y="280" width="130" height="80" class="metal" />
             <line id="rod" x1="165" y1="300" x2="330" y2="300" stroke="#b7becb" stroke-width="10" />
+            <rect id="piston" x="100" y="280" width="130" height="80" class="metal" />
             <g id="crank" transform="translate(165,350)">
                 <circle r="60" class="metal" />
                 <circle cx="0" cy="-42" r="10" class="blue" />
@@ -658,7 +782,7 @@
             const valveStatusLabel = el('valveStatus');
             const currentPosLine = el('currentPosLine');
             // 線画モード切り替え
-            el('printMode').onchange = function() {
+            el('printMode').onchange = function () {
                 if (this.checked) {
                     document.body.classList.add('line-art-mode');
                 } else {
@@ -674,6 +798,16 @@
             let intakeCamPhase = 0, exhaustCamPhase = 0;
 
             const toRad = deg => deg * Math.PI / 180;
+
+            function formatCrankAngle(angle) {
+                const useAbbr = el('useAbbrNotation').checked;
+                const a = ((angle % 720) + 720) % 720;
+                if (!useAbbr) return `${a.toFixed(1).replace(/\.0$/, "")}°`;
+                const cycleA = a % 360;
+                if (cycleA === 0 || cycleA === 360) return "TDC";
+                if (cycleA === 180) return "BDC";
+                return (cycleA > 0 && cycleA < 180) ? `ATDC ${cycleA.toFixed(1).replace(/\.0$/, "")}°` : `BTDC ${(360 - cycleA).toFixed(1).replace(/\.0$/, "")}°`;
+            }
 
             function calculateDynamicLift(durationDeg) {
                 return 12 + Math.max(0, (durationDeg - 180) * 0.12);
@@ -728,8 +862,6 @@
                 const overlap = parseFloat(valveOverlapEl.value), phaseAdj = parseFloat(camPhaseEl.value);
                 const iDeg = parseFloat(intDurEl.value), eDeg = parseFloat(exhDurEl.value);
                 let intOpen = -1, intClose = -1, exhOpen = -1, exhClose = -1;
-
-                // グラフの描画ループ
                 for (let i = 0; i <= 720; i += 0.5) {
                     const baseCam = (i * camRatio + (phaseAdj * camRatio) + 180);
                     const relExh = baseCam + (exhaustCamPhase * camRatio) + 135 - overlap / 2;
@@ -743,9 +875,7 @@
                 }
                 el('graphExhPath').setAttribute('d', dExh);
                 el('graphIntPath').setAttribute('d', dInt);
-
-                // ロブセンター（中心線）の更新処理を追加
-                const updateLobeCenter = (id, open, close) => {
+                const updateLobeCenter = (id, open, close, y) => {
                     const g = el(id);
                     if (open === -1 || close === -1) { g.setAttribute('display', 'none'); return; }
                     g.setAttribute('display', 'inline');
@@ -754,24 +884,23 @@
                     g.querySelector('line').setAttribute('x2', center);
                     const txt = g.querySelector('text');
                     txt.setAttribute('x', center);
-                    // クランク角表示に合わせて反転計算
-                    txt.textContent = `LC: ${(720 - center).toFixed(1)}°`;
+                    txt.setAttribute('y', y);
+                    txt.textContent = `LC: ${formatCrankAngle(720 - center)}`;
                 };
-                updateLobeCenter('lobeCenterEx', exhOpen, exhClose);
-                updateLobeCenter('lobeCenterInt', intOpen, intClose);
-
-                // 既存のマーカー更新処理
-                const setMarker = (id, x, isStart) => {
+                updateLobeCenter('lobeCenterEx', exhOpen, exhClose, 95);
+                updateLobeCenter('lobeCenterInt', intOpen, intClose, 95);
+                const setMarker = (id, x, isStart, y) => {
                     const m = el(id); if (!m) return;
                     if (x === -1) { m.setAttribute('opacity', '0'); return; }
                     m.setAttribute('opacity', '1');
                     const cx = isStart ? (x - 0.5) : (x + 0.5);
                     m.querySelector('line').setAttribute('x1', cx); m.querySelector('line').setAttribute('x2', cx);
                     m.querySelector('text').setAttribute('x', cx);
-                    m.querySelector('text').textContent = `${(720 - cx).toFixed(1).replace(/\.0$/, "")}°`;
+                    m.querySelector('text').setAttribute('y', y);
+                    m.querySelector('text').textContent = formatCrankAngle(720 - cx);
                 };
-                setMarker('markerExStart', exhOpen, true); setMarker('markerExEnd', exhClose, false);
-                setMarker('markerIntStart', intOpen, true); setMarker('markerIntEnd', intClose, false);
+                setMarker('markerExStart', exhOpen, true, 27); setMarker('markerExEnd', exhClose, false, 27);
+                setMarker('markerIntStart', intOpen, true, 15); setMarker('markerIntEnd', intClose, false, 15);
                 updateDurLabel(exhOpen, exhClose, calculateDynamicLift(eDeg), "#e45b5b", "exh");
                 updateDurLabel(intOpen, intClose, calculateDynamicLift(iDeg), "#4aa3ff", "int");
             }
@@ -842,7 +971,7 @@
                 rod.setAttribute('x2', 165 + crankRadius * Math.sin(theta)); rod.setAttribute('y2', 350 - crankRadius * Math.cos(theta));
                 crank.setAttribute('transform', `translate(165,350) rotate(${crankAngle})`);
                 crankCrosshair.setAttribute('transform', `translate(165,350) rotate(${(crankAngle % 360) + CRANK_TDC_OFFSET + parseFloat(ignAdvEl.value)})`);
-                
+
 
                 const gap = parseFloat(camGapEl.value), overlap = parseFloat(valveOverlapEl.value), phaseAdj = parseFloat(camPhaseEl.value);
                 const baseCam = (crankAngle * camRatio + (phaseAdj * camRatio) + 180);
@@ -923,6 +1052,7 @@
             el('exhaustCamPhasePlus').onclick = () => { exhaustCamPhase += 1; updateLabels(); updateValveGraph(); };
             el('ignAdvMinus').onclick = () => { ignAdvEl.value--; updateLabels(); };
             el('ignAdvPlus').onclick = () => { ignAdvEl.value++; updateLabels(); };
+            el('useAbbrNotation').onchange = updateValveGraph;
 
             updateCamShapes(); requestAnimationFrame(step);
         })();
