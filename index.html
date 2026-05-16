@@ -133,7 +133,7 @@
             justify-content: center;
             align-items: flex-start;
             /* 上寄せに変更 */
-            padding-top: 1px;
+            padding-top: 35px;
             /* 上端の余白を設定 */
             background: radial-gradient(1200px 600px at 60% 40%, #0c1018 0%, #0b0e14 40%, #0a0d13 100%);
             overflow-y: auto;
@@ -711,19 +711,19 @@
                     </feMerge>
                 </filter>
             </defs>
-            <rect x="90" y="110" width="150" height="260" rx="12" ry="12" fill="#1a1f29" stroke="#333"
+            <rect x="90" y="40" width="150" height="260" rx="12" ry="12" fill="#1a1f29" stroke="#333"
                 stroke-width="3" />
-            <line id="tdcLine" x1="50" y1="115" x2="270" y2="115" class="overlay" />
-            <text x="275" y="115" dy="4" class="label" style="font-size:12px;">TDC</text>
-            <line id="bdcLine" x1="50" y1="195" x2="270" y2="195" class="overlay" />
-            <text x="275" y="195" dy="4" class="label" style="font-size:12px;">BDC</text>
-            <line id="crankCenterLine" x1="50" y1="350" x2="270" y2="350" class="overlay" />
-            <text x="275" y="350" dy="4" class="label" style="font-size:12px;">Fマーク</text>
-            <line id="camCenterLine" x1="350" y1="190" x2="800" y2="190" class="overlay" />
+            <line id="tdcLine" x1="50" y1="45" x2="270" y2="45" class="overlay" />
+            <text x="275" y="45" dy="4" class="label" style="font-size:12px;">TDC</text>
+            <line id="bdcLine" x1="50" y1="125" x2="270" y2="125" class="overlay" />
+            <text x="275" y="125" dy="4" class="label" style="font-size:12px;">BDC</text>
+            <line id="crankCenterLine" x1="50" y1="280" x2="270" y2="280" class="overlay" />
+            <text x="275" y="280" dy="4" class="label" style="font-size:12px;">Fマーク</text>
+            <line id="camCenterLine" x1="350" y1="120" x2="800" y2="120" class="overlay" />
 
             <line id="rod" x1="165" y1="300" x2="330" y2="300" stroke="#b7becb" stroke-width="10" />
             <rect id="piston" x="100" y="280" width="130" height="80" class="metal" />
-            <g id="crank" transform="translate(165,350)">
+            <g id="crank" transform="translate(165,280)">
                 <circle r="60" class="metal" />
                 <circle cx="0" cy="-42" r="10" class="blue" />
             </g>
@@ -732,17 +732,17 @@
                 <line x1="0" y1="-70" x2="0" y2="0" stroke="#ffd700" stroke-width="3" />
                 <line x1="0" y1="0" x2="0" y2="70" class="crankCross" />
             </g>
-            <g id="sparkGroup" transform="translate(165,110)" opacity="0">
+            <g id="sparkGroup" transform="translate(165,40)" opacity="0">
                 <polygon points="0,-10 4,-2 -4,-2" class="spark" />
                 <circle r="20" class="spark" />
             </g>
 
-            <g id="exhLabelGroup" transform="translate(480, 190)">
+            <g id="exhLabelGroup" transform="translate(480, 120)">
                 <text class="label" x="-30" y="-80">Exhaust Cam</text>
                 <circle id="exhValveLightCanvas" cx="-45" cy="-85" r="10" fill="#333" stroke="#5b2a2a"
                     stroke-width="1" />
             </g>
-            <g id="exhGroup" transform="translate(480,190)">
+            <g id="exhGroup" transform="translate(480,120)">
                 <g id="camExh">
                     <path id="camPathExh" d="..." fill="#9aa3b3" stroke="#b7becb" stroke-width="2" />
                     <line x1="-40" y1="0" x2="40" y2="0" class="camCross" />
@@ -755,12 +755,12 @@
                 </g>
             </g>
 
-            <g id="intLabelGroup" transform="translate(620, 190)">
+            <g id="intLabelGroup" transform="translate(620, 120)">
                 <text class="label" x="-30" y="-80">Intake Cam</text>
                 <circle id="intValveLightCanvas" cx="-45" cy="-85" r="10" fill="#333" stroke="#2a3f66"
                     stroke-width="1" />
             </g>
-            <g id="intGroup" transform="translate(620,190)">
+            <g id="intGroup" transform="translate(620,120)">
                 <g id="camInt">
                     <path id="camPathInt" d="..." fill="#9aa3b3" stroke="#b7becb" stroke-width="2" />
                     <line x1="-40" y1="0" x2="40" y2="0" class="camCross" />
@@ -970,18 +970,18 @@
                 currentPosLine.setAttribute('x1', graphX); currentPosLine.setAttribute('x2', graphX);
 
                 const theta = toRad(crankAngle % 360);
-                const yP = 350 - (crankRadius * Math.cos(theta) + Math.sqrt(rodLength ** 2 - (crankRadius * Math.sin(theta)) ** 2));
+                const yP = 280 - (crankRadius * Math.cos(theta) + Math.sqrt(rodLength ** 2 - (crankRadius * Math.sin(theta)) ** 2));
                 piston.setAttribute('y', yP - 40);
                 rod.setAttribute('x1', 165); rod.setAttribute('y1', yP + 40);
-                rod.setAttribute('x2', 165 + crankRadius * Math.sin(theta)); rod.setAttribute('y2', 350 - crankRadius * Math.cos(theta));
-                crank.setAttribute('transform', `translate(165,350) rotate(${crankAngle})`);
-                crankCrosshair.setAttribute('transform', `translate(165,350) rotate(${(crankAngle % 360) + CRANK_TDC_OFFSET + parseFloat(ignAdvEl.value)})`);
+                rod.setAttribute('x2', 165 + crankRadius * Math.sin(theta)); rod.setAttribute('y2', 280 - crankRadius * Math.cos(theta));
+                crank.setAttribute('transform', `translate(165,280) rotate(${crankAngle})`);
+                crankCrosshair.setAttribute('transform', `translate(165,280) rotate(${(crankAngle % 360) + CRANK_TDC_OFFSET + parseFloat(ignAdvEl.value)})`);
 
 
                 const gap = parseFloat(camGapEl.value), overlap = parseFloat(valveOverlapEl.value), phaseAdj = parseFloat(camPhaseEl.value);
                 const baseCam = (crankAngle * camRatio + (phaseAdj * camRatio) + 180);
-                el('exhGroup').setAttribute("transform", `translate(${550 - gap / 2}, 190)`);
-                el('intGroup').setAttribute("transform", `translate(${550 + gap / 2}, 190)`);
+                el('exhGroup').setAttribute("transform", `translate(${550 - gap / 2}, 120)`);
+                el('intGroup').setAttribute("transform", `translate(${550 + gap / 2}, 120)`);
 
                 const aEx = (baseCam + (exhaustCamPhase * camRatio) + 135 - overlap / 2);
                 const aIn = (baseCam + (intakeCamPhase * camRatio) - 135 + overlap / 2);
