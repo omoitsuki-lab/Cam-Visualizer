@@ -640,8 +640,12 @@
             <div id="valveStatus">ALL CLOSED</div>
         </div>
 
-        <div id="graphContainer"
-            style="position: absolute; top: 75%; left: 50%; transform: translateX(-50%); width: 95%; max-width: 800px; height: 80px; background: rgba(15, 17, 21, 0.8); border: 1px solid #333; border-radius: 8px; pointer-events: none; z-index: 10;">
+        <div id="graphContainer" style="position: absolute; top: 70%; left: 50%; transform: translateX(-50%); 
+           width: 95%; max-width: 800px; 
+           /* 修正箇所：高さは横幅の15%にしつつ、最小・最大を制限する */
+           height: 15vw; min-height: 60px; max-height: 120px; 
+           background: rgba(15, 17, 21, 0.8); border: 1px solid #333; 
+           border-radius: 8px; pointer-events: none; z-index: 10;">
 
             <div
                 style="position: absolute; right: 10px; top: -28px; font-size: 12px; color: #aaa; pointer-events: auto;">
@@ -649,7 +653,8 @@
                         id="useAbbrNotation" type="checkbox"> BTDC/ATDC表記</label>
             </div>
 
-            <svg id="valveGraph" width="100%" height="100%" viewBox="0 0 720 100" preserveAspectRatio="none" style="display: block; width: 100%;">
+            <svg id="valveGraph" width="100%" height="100%" viewBox="0 0 720 100" preserveAspectRatio="none"
+                style="display: block; width: 100%;">
                 <line x1="0" y1="0" x2="0" y2="100" stroke="#444" stroke-width="1" />
                 <line x1="180" y1="0" x2="180" y2="100" stroke="#222" stroke-width="1" stroke-dasharray="4" />
                 <line x1="360" y1="0" x2="360" y2="100" stroke="#444" stroke-width="1" />
