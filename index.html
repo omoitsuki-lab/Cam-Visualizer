@@ -220,31 +220,6 @@
             }
         }
 
-        #jogDial {
-            width: 100%;
-            height: auto;
-            max-width: 140px;
-            cursor: grab;
-            touch-action: none;
-        }
-
-        @media (max-width: 768px) {
-            body {
-                grid-template-columns: 1fr;
-                grid-template-rows: auto 2fr 1fr;
-            }
-
-            .panel {
-                grid-row: 3;
-                border-right: none;
-                border-top: 1px solid #222;
-            }
-
-            .canvas {
-                grid-row: 2;
-            }
-        }
-
         /* --- 回転方向トグルスイッチのカスタムスタイル --- */
         .switch-container {
             display: flex;
@@ -413,7 +388,6 @@
             cursor: pointer;
         }
 
-        /* チェックを入れた時のレ点の色 */
         body.line-art-mode input[type="checkbox"]:checked::after {
             content: "✔";
             position: absolute;
@@ -423,14 +397,12 @@
             font-size: 12px;
         }
 
-        /* ボタン */
         body.line-art-mode button {
             background: #fff !important;
             color: #000 !important;
             border: 2px solid #000 !important;
         }
 
-        /* 塗りつぶし要素の白抜き化 */
         body.line-art-mode .blue,
         body.line-art-mode .red,
         body.line-art-mode .green,
@@ -448,14 +420,12 @@
             filter: none !important;
         }
 
-        /* ジョグダイヤルマーカーとコンロッドの白抜き */
         body.line-art-mode #dialMarks rect {
             fill: #fff !important;
             stroke: #000 !important;
             stroke-width: 1px !important;
         }
 
-        /* 修正後：コンロッドをピストンの後ろに配置し、白抜きに見せる設定 */
         body.line-art-mode #rod {
             stroke: #fff !important;
             stroke-width: 8px !important;
@@ -463,7 +433,6 @@
             filter: drop-shadow(1px 0 0 #000) drop-shadow(-1px 0 0 #000) drop-shadow(0 1px 0 #000) drop-shadow(0 -1px 0 #000) !important;
         }
 
-        /* 十字線・補助線・テキスト（標準太さ） */
         body.line-art-mode .camCross,
         body.line-art-mode .crankCross,
         body.line-art-mode #crankCrosshair line,
@@ -482,7 +451,6 @@
             stroke-dasharray: 4 2 !important;
         }
 
-        /* グラフエリアの背景をクリア（透明）にする */
         body.line-art-mode #graphContainer {
             background: transparent !important;
             border: 2px solid #000 !important;
@@ -498,7 +466,6 @@
             stroke-width: 2px !important;
         }
 
-        /* グラフ内の線と文字（背後の絵と混ざるため太さを微調整） */
         body.line-art-mode #valveGraph line {
             stroke: #000 !important;
             opacity: 1 !important;
@@ -528,7 +495,6 @@
             box-shadow: none !important;
         }
 
-        /* スクロールバー */
         body.line-art-mode ::-webkit-scrollbar {
             width: 12px;
             background: #fff;
@@ -539,13 +505,22 @@
             border: 1px solid #000;
         }
 
-        /* --- [修正] 線画モード時の全画面ボタンとアイコンのカラー追従 --- */
         body.line-art-mode #fullscreenToggle {
             color: #000 !important;
         }
 
         body.line-art-mode #fullscreenIcon {
             fill: #000 !important;
+        }
+
+        .abbr-btn:hover {
+            background: #3d4b75 !important;
+        }
+
+        body.line-art-mode .abbr-btn {
+            background: #fff !important;
+            color: #000 !important;
+            border: 1px solid #000 !important;
         }
     </style>
 </head>
@@ -556,7 +531,6 @@
             <div class="title-text" style="font-weight: bold;">Piston & Cam Visualizer</div>
         </div>
         <div style="display:flex; align-items:center; gap:20px;">
-            <!-- 回転方向スイッチ -->
             <div class="switch-container">
                 <span>回転方向 (左/右):</span>
                 <label class="toggle-switch">
@@ -564,11 +538,9 @@
                     <span class="slider"></span>
                 </label>
             </div>
-            <!-- 線画モードスイッチ -->
             <label class="switch-container" style="cursor: pointer; display: flex; align-items: center; gap: 4px;">
                 <input id="printMode" type="checkbox" /> 線画モード
             </label>
-            <!-- 全画面切り替えボタン（一番右端） -->
             <button id="fullscreenToggle" class="switch-container"
                 style="border: none !important; cursor: pointer; padding: 4px 8px; border-radius: 4px; display: flex; align-items: center;"
                 title="全画面モード">
@@ -720,10 +692,12 @@
            background: rgba(15, 17, 21, 0.8); border: 1px solid #333; 
            border-radius: 8px; pointer-events: none; z-index: 10;">
 
-            <div
-                style="position: absolute; right: 10px; top: -28px; font-size: 12px; color: #aaa; pointer-events: auto;">
-                <label style="cursor: pointer; display: flex; align-items: center; gap: 4px;"><input
-                        id="useAbbrNotation" type="checkbox"> BTDC/ATDC表記</label>
+            <!-- 修正後: 背景色とボーダーを明るく調整したクラス・スタイルを適用 -->
+            <div style="position: absolute; right: 10px; top: -32px; pointer-events: auto;">
+                <label class="switch-container abbr-btn"
+                    style="cursor: pointer; display: flex; align-items: center; gap: 6px; background: #2d3859; border: 1px solid #4a5168; color: #fff; font-weight: bold; transition: background 0.2s;">
+                    <input id="useAbbrNotation" type="checkbox" style="cursor: pointer;"> BTDC/ATDC表記
+                </label>
             </div>
 
             <svg id="valveGraph" width="100%" height="100%" viewBox="0 0 720 100" preserveAspectRatio="none"
@@ -868,11 +842,9 @@
             const graphFlipWrapper = el('graphFlipWrapper');
             const camAreaSystemGroup = el('camAreaSystemGroup');
 
-            // --- 全画面モードの切り替えロジック ---
             const fsToggle = el('fullscreenToggle');
             const fsIcon = el('fullscreenIcon');
 
-            // 全画面用と標準モード用のSVGパス定義
             const pathFullscreen = "M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z";
             const pathExitFullscreen = "M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z";
 
@@ -886,23 +858,24 @@
                 }
             };
 
-            // --- [修正] updateFsButtonStyle 関数を以下に書き換え ---
             const updateFsButtonStyle = () => {
                 const isLineArt = el('printMode').checked;
-                const printModeLabel = el('printMode').parentElement; // 線画モードのラベルを取得
+                const printModeLabel = el('printMode').parentElement;
+                const abbrLabel = el('useAbbrNotation').parentElement;
 
                 if (isLineArt) {
-                    // 全画面ボタンのスタイル
                     fsToggle.style.setProperty('background', '#fff', 'important');
                     fsToggle.style.setProperty('color', '#000', 'important');
                     fsToggle.style.border = "1px solid #000";
 
-                    // 線画モードラベルのスタイル
                     printModeLabel.style.setProperty('background', '#fff', 'important');
                     printModeLabel.style.setProperty('color', '#000', 'important');
                     printModeLabel.style.border = "1px solid #000";
+
+                    abbrLabel.style.setProperty('background', '#fff', 'important');
+                    abbrLabel.style.setProperty('color', '#000', 'important');
+                    abbrLabel.style.border = "1px solid #000";
                 } else {
-                    // 通常時のスタイルに戻す
                     fsToggle.style.background = "#333";
                     fsToggle.style.color = "#fff";
                     fsToggle.style.border = "none";
@@ -910,10 +883,14 @@
                     printModeLabel.style.background = "#333";
                     printModeLabel.style.color = "#fff";
                     printModeLabel.style.border = "none";
+
+                    // 通常モード時の明るい背景色・ボーダーの復元
+                    abbrLabel.style.background = "#2d3859";
+                    abbrLabel.style.color = "#fff";
+                    abbrLabel.style.border = "1px solid #4a5168";
                 }
             };
-
-            // 画面の状態変化を検知してアイコンとツールチップを自動切り替え
+            
             document.addEventListener('fullscreenchange', () => {
                 const isLineArt = el('printMode').checked;
                 if (document.fullscreenElement) {
@@ -923,11 +900,9 @@
                     fsIcon.querySelector('path').setAttribute('d', pathFullscreen);
                     fsToggle.title = "全画面モード";
                 }
-                // 線画モード時のアイコン色追従
                 fsToggle.style.color = isLineArt ? "#000" : "#fff";
             });
 
-            // 既存の線画モード切り替え処理にアイコンの色変更処理を追従させる
             const originalPrintModeChange = el('printMode').onchange;
             el('printMode').onchange = function () {
                 if (originalPrintModeChange) originalPrintModeChange.call(this);
@@ -953,17 +928,37 @@
 
             const toRad = deg => deg * Math.PI / 180;
 
-            // トグルがON(checked)なら右回転(cw)、OFFなら左回転(ccw)
             const getDirMode = () => el('rotationDirectionToggle').checked ? 'cw' : 'ccw';
 
+            // --- 動的 BTDC/ATDC / BBDC/ABDC 判定ロジック ---
             function formatCrankAngle(angle) {
                 const useAbbr = el('useAbbrNotation').checked;
                 const a = ((angle % 720) + 720) % 720;
                 if (!useAbbr) return `${a.toFixed(1).replace(/\.0$/, "")}°`;
+
                 const cycleA = a % 360;
                 if (cycleA === 0 || cycleA === 360) return "TDC";
                 if (cycleA === 180) return "BDC";
-                return (cycleA > 0 && cycleA < 180) ? `ATDC ${cycleA.toFixed(1).replace(/\.0$/, "")}°` : `BTDC ${(360 - cycleA).toFixed(1).replace(/\.0$/, "")}°`;
+
+                // TDC（0°または360°）および BDC（180°）からの距離を比較
+                const distTDC = Math.min(cycleA, 360 - cycleA);
+                const distBDC = Math.abs(cycleA - 180);
+
+                if (distTDC < distBDC) {
+                    // TDC基準 (0°〜90°未満, 270°超〜360°)
+                    if (cycleA < 180) {
+                        return `ATDC ${distTDC.toFixed(1).replace(/\.0$/, "")}°`;
+                    } else {
+                        return `BTDC ${distTDC.toFixed(1).replace(/\.0$/, "")}°`;
+                    }
+                } else {
+                    // BDC基準 (90°〜270°)
+                    if (cycleA < 180) {
+                        return `BBDC ${distBDC.toFixed(1).replace(/\.0$/, "")}°`;
+                    } else {
+                        return `ABDC ${distBDC.toFixed(1).replace(/\.0$/, "")}°`;
+                    }
+                }
             }
 
             function calculateDynamicLift(durationDeg) {
@@ -1010,7 +1005,6 @@
                 if (open === -1) { label.textContent = ""; return; }
                 const actualDur = ((close + 0.5) - (open - 0.5)).toFixed(1).replace(/\.0$/, "");
 
-                // 右回転(cw)のときはテキストのX座標を反転軸に合わせてミラーリング補正
                 let targetX = open + (close - open) / 2;
                 if (getDirMode() === 'cw') {
                     targetX = 720 - targetX;
@@ -1042,7 +1036,6 @@
                 el('graphExhPath').setAttribute('d', dExh);
                 el('graphIntPath').setAttribute('d', dInt);
 
-                // 右回転時のグラフ表示・配置システムのトポロジー変換
                 if (getDirMode() === 'cw') {
                     graphFlipWrapper.setAttribute('transform', 'matrix(-1 0 0 1 720 0)');
                     el('graphLabels').innerHTML = `<span id="lbl0">0°(TDC)</span><span id="lbl1">180°(BDC)</span><span id="lbl2">360°(TDC)</span><span id="lbl3">540°(BDC)</span><span id="lbl4">720°(TDC)</span>`;
@@ -1062,13 +1055,34 @@
                     txt.setAttribute('x', center);
                     txt.setAttribute('y', y);
 
-                    // 右回転時は文字が反転するのを防ぐため、個別文字タグに対して個別反転マトリクスを適用
                     if (getDirMode() === 'cw') {
                         txt.setAttribute('transform', `scale(-1, 1) translate(${-center * 2}, 0)`);
                     } else {
                         txt.removeAttribute('transform');
                     }
-                    txt.textContent = `LC: ${formatCrankAngle(720 - center)}`;
+
+                    // --- LCのみTDC固定表記にする判定 ---
+                    const useAbbr = el('useAbbrNotation').checked;
+                    const a = ((720 - center) % 720 + 720) % 720; // クランク角度に変換
+
+                    let lcStr = "";
+                    if (!useAbbr) {
+                        lcStr = `${a.toFixed(1).replace(/\.0$/, "")}°`;
+                    } else {
+                        const cycleA = a % 360; // 0〜360°（1サイクル）
+                        if (cycleA === 0 || cycleA === 360) {
+                            lcStr = "TDC";
+                        } else if (cycleA < 180) {
+                            // TDCより後（遅角側）
+                            lcStr = `ATDC ${cycleA.toFixed(1).replace(/\.0$/, "")}°`;
+                        } else {
+                            // TDCより前（進角側）
+                            const btdcVal = 360 - cycleA;
+                            lcStr = `BTDC ${btdcVal.toFixed(1).replace(/\.0$/, "")}°`;
+                        }
+                    }
+
+                    txt.textContent = `LC: ${lcStr}`;
                 };
 
                 updateLobeCenter('lobeCenterEx', exhOpen, exhClose, 95);
@@ -1121,26 +1135,18 @@
             function step(now) {
                 const dt = (now - last) / 1000; last = now;
                 const isCW = (getDirMode() === 'cw');
-                //const isCW = (getDirMode() === 'ccw');
 
-                // 自動回転ロジックの極性判定 (CWなら進む、CCWなら戻る)
                 if (autoRotateToggleEl.checked) {
                     const deltaAng = (parseFloat(rpmEl.value) * 720 / 60) * dt;
-                    //クランク回転方向はこの辺を入れ替えると変わる
                     if (isCW) {
                         crankAngle = (crankAngle + deltaAng) % 720;
-                        //crankAngle = (crankAngle - deltaAng % 720 + 720) % 720;
                     } else {
                         crankAngle = (crankAngle - deltaAng % 720 + 720) % 720;
-                        //crankAngle = (crankAngle + deltaAng) % 720;
                     }
                 }
-                //黄色いバーを動かすための数値を取得
                 const displayAngle = (720 - crankAngle) % 720;
-                //const displayAngle = crankAngle;
                 dialMarks.setAttribute('transform', `translate(50, 50) rotate(${crankAngle})`);
 
-                // 視覚補助の制御
                 const isTdcVisible = el('showTDC').checked;
                 const displayStyle = isTdcVisible ? 'inline' : 'none';
 
@@ -1169,78 +1175,52 @@
                     el('sparkGroup').setAttribute('opacity', '0');
                 }
 
-                // --- 修正箇所：カムシステム全体のミラーリングとラベル位置の補正 ---
                 if (isCW) {
-                    // グループ全体を反転
                     camAreaSystemGroup.setAttribute('transform', 'translate(550, 120) scale(-1, 1)');
-
-                    // Exhaustラベルの補正: CCW時と同じ位置に見えるよう座標を反転・調整
-                    // scale(-1, 1) で文字の向きを戻し、translate で位置を右側に押し戻す
                     el('exhLabelGroup').querySelector('text').setAttribute('transform', 'scale(-1, 1) translate(0, 0)');
-                    // ランプ（circle）も同様に反転の影響を打ち消す位置へ
                     el('exhLabelGroup').querySelector('circle').setAttribute('transform', 'scale(-1, 1) translate(0, 0)');
-
-                    // Intakeラベルの補正
                     el('intLabelGroup').querySelector('text').setAttribute('transform', 'scale(-1, 1) translate(0, 0)');
                     el('intLabelGroup').querySelector('circle').setAttribute('transform', 'scale(-1, 1) translate(0, 0)');
                 } else {
-                    // CCW時は通常のトポロジー
                     camAreaSystemGroup.setAttribute('transform', 'translate(550, 120)');
                     el('exhLabelGroup').querySelector('text').removeAttribute('transform');
                     el('exhLabelGroup').querySelector('circle').removeAttribute('transform');
                     el('intLabelGroup').querySelector('text').removeAttribute('transform');
                     el('intLabelGroup').querySelector('circle').removeAttribute('transform');
                 }
-                // -----------------------------------------------------------
 
-                // クランクの挙動演算 (CW/CCW連動)
                 const rotSign = isCW ? -1 : 1;
-                //const rotSign = isCW ? 1 : -1;
 
-
-                //黄色いバーを動かしているコード
-                //const graphX = 720 - displayAngle;
                 const graphX = isCW ? (720 - crankAngle) : crankAngle;
                 currentPosLine.setAttribute('x1', graphX); currentPosLine.setAttribute('x2', graphX);
 
-                //const theta = toRad((rotSign * crankAngle) % 360);
                 const theta = toRad((crankAngle) % 360);
                 const yP = 280 - (crankRadius * Math.cos(theta) + Math.sqrt(rodLength ** 2 - (crankRadius * Math.sin(theta)) ** 2));
                 piston.setAttribute('y', yP - 40);
                 rod.setAttribute('x1', 165); rod.setAttribute('y1', yP + 40);
                 rod.setAttribute('x2', 165 + crankRadius * Math.sin(theta)); rod.setAttribute('y2', 280 - crankRadius * Math.cos(theta));
-                //crank.setAttribute('transform', `translate(165,280) rotate(${rotSign * crankAngle})`);
                 crank.setAttribute('transform', `translate(165,280) rotate(${crankAngle})`);
-                //crankCrosshair.setAttribute('transform', `translate(165,280) rotate(${((rotSign * crankAngle) % 360) + CRANK_TDC_OFFSET + parseFloat(ignAdvEl.value)})`);
                 crankCrosshair.setAttribute('transform', `translate(165,280) rotate(${((crankAngle) % 360) + CRANK_TDC_OFFSET + parseFloat(ignAdvEl.value)})`);
 
-                // カムシャフト配置・位置制御
                 const gap = parseFloat(camGapEl.value), overlap = parseFloat(valveOverlapEl.value), phaseAdj = parseFloat(camPhaseEl.value);
                 const baseCam = (crankAngle * camRatio + (phaseAdj * camRatio) + 180);
 
-                // 元々の左右配置オフセットを適用
                 el('exhGroup').setAttribute("transform", `translate(${-gap / 2}, 0)`);
                 el('exhLabelGroup').setAttribute("transform", `translate(${-gap / 2}, 0)`);
                 el('intGroup').setAttribute("transform", `translate(${gap / 2}, 0)`);
                 el('intLabelGroup').setAttribute("transform", `translate(${gap / 2}, 0)`);
 
                 const aEx = (baseCam + (exhaustCamPhase * camRatio) + rotSign * (135 - overlap / 2));
-                const aIn = (baseCam + (intakeCamPhase  * camRatio) - rotSign * (135 - overlap / 2));
+                const aIn = (baseCam + (intakeCamPhase * camRatio) - rotSign * (135 - overlap / 2));
 
                 camExh.setAttribute('transform', `rotate(${(rotSign * aEx) % 360})`);
-                //camExh.setAttribute('transform', `rotate(${(aEx) % 360})`);
                 camInt.setAttribute('transform', `rotate(${(rotSign * aIn) % 360})`);
-                //camInt.setAttribute('transform', `rotate(${(aIn) % 360})`);
 
-                // --- [修正] カム山がフォロワーを押し下げるリフト量の演算 ---
-                // CW（右回転）の時は、時間の経過とともにカムの位相が逆回りに進むため、
-                // リフト量を判定するための参照角度（aEx, aIn）の極性を反転させます。
                 const lookupEx = isCW ? (-aEx) : aEx;
                 const lookupIn = isCW ? (-aIn) : aIn;
 
                 const liftEx = getFlatFollowerLift(parseFloat(exhDurEl.value), lookupEx - (180 - overlap / 2));
                 const liftIn = getFlatFollowerLift(parseFloat(intDurEl.value), lookupIn - (180 + overlap / 2));
-                // --------------------------------------------------------
                 const bVis = baseR - 35;
 
                 exhValveAssembly.setAttribute('transform', `rotate(${-overlap / 2}) translate(0, ${liftEx + bVis})`);
@@ -1272,14 +1252,10 @@
                     else { valveStatusLabel.textContent = 'ALL CLOSED'; valveStatusLabel.style.color = '#aaa'; }
                 }
                 updateLabels();
-                // 【デバッグ】不要になったらこの1行を消すだけ crankAngle ; 000
-                //(document.getElementById('db_ang1') || Object.assign(document.body.appendChild(document.createElement('div')), { id: 'db_ang1', style: 'position:absolute;top:50px;right:15px;color:#00ff00;font-family:monospace;z-index:9999' })).textContent = "crankAngle ; " + Math.round(crankAngle);
-                //(document.getElementById('db_ang2') || Object.assign(document.body.appendChild(document.createElement('div')), { id: 'db_ang2', style: 'position:absolute;top:100px;right:15px;color:#00ff00;font-family:monospace;z-index:9999' })).textContent = "displayAngle ; " + Math.round(displayAngle);
 
                 requestAnimationFrame(step);
             }
 
-            // ジョグダイヤル操作ハンドラ (CW/CCW両対応)
             function getAngle(e) {
                 const rect = jogDial.getBoundingClientRect();
                 const cx = e.touches ? e.touches[0].clientX : e.clientX;
@@ -1292,7 +1268,6 @@
                     const curA = getAngle(e); let delta = curA - lastMouseAngle;
                     if (delta > 180) delta -= 360; if (delta < -180) delta += 360;
 
-                    // ダイヤルのグラフィックの回転と、ドラッグの移動方向（delta）を常に一致させる
                     crankAngle = (crankAngle + delta + 720) % 720;
 
                     lastMouseAngle = curA;
@@ -1302,7 +1277,6 @@
             jogDial.addEventListener('mousedown', startH); window.addEventListener('mousemove', moveH); window.addEventListener('mouseup', () => isDragging = false);
             jogDial.addEventListener('touchstart', startH, { passive: false }); window.addEventListener('touchmove', moveH, { passive: false }); window.addEventListener('touchend', () => isDragging = false);
 
-            // 手動進退ボタンの挙動調整（回転方向に応じて極性を切り替え）
             el('crankAnglePlus10').onclick = () => {
                 if (getDirMode() === 'cw') {
                     crankAngle = (crankAngle + 1) % 720;
@@ -1332,7 +1306,7 @@
             el('ignAdvPlus').onclick = () => { ignAdvEl.value++; updateLabels(); };
 
             el('useAbbrNotation').onchange = updateValveGraph;
-            el('rotationDirectionToggle').onchange = updateValveGraph; // 回転方向切り替え時、即座にグラフ・トポロジーを更新
+            el('rotationDirectionToggle').onchange = updateValveGraph;
 
             updateCamShapes(); requestAnimationFrame(step);
         })();
